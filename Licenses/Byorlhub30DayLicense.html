@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase ByorlHub - 30 Day License</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="purchaseTitle">Purchase ByorlHub - 30 Day License</h1>
+        <div class="priceInfo">
+            <div class="robuxContainer">
+                <img src="../icon/Robux.svg" alt="Robux Icon" class="robuxIcon">
+                <span class="price">2</span>
+            </div>
+        </div>
+        <form id="form">
+            <label id="usernameLabel" for="username">Roblox Username</label>
+            <input type="text" id="username" placeholder="Enter your Roblox username..." required>
+            <br>
+            <button class="btn" id="continueButton" type="button" onclick="validatePurchase()">Continue</button>
+        </form>
+        <div id="status"></div>
+        <div id="keyContainer" style="display:none;"> 
+            <input type="text" id="key" readonly />
+        </div>
+    </div>
+
+    <script src="../script/Byorlhub30DayLicense.js"></script>
+</body>
+</html>
