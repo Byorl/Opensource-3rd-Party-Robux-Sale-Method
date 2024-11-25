@@ -1,0 +1,92 @@
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #F5F7FB;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 450px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.purchaseTitle {
+    font-size: 24px; 
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.instruction {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+button {
+    width: 180px; 
+    padding: 15px;
+    font-size: 16px;
+    color: white;
+    background-color: #2D2F3C;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #1F2129;
+}
+
+button:active {
+    background-color: #181A22;
+}
+
+.price-container {
+    display: flex;
+    justify-content: center;
+    gap: 125px;
+    margin-top: 20px;
+    width: 100%; 
+}
+
+.price-box {
+    display: flex;
+    align-items: center;
+    background-color: #E2E2E2;
+    padding: 10px 15px;
+    border-radius: 50px;
+    text-align: center;
+}
+
+.robux-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+}
+
+.price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
