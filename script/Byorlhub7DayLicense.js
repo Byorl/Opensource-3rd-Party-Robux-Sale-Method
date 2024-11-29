@@ -6,14 +6,12 @@ async function validatePurchase() {
         return;
     }
 
-    // Hide the priceInfo and purchaseTitle
     const priceInfoElement = document.querySelector('.priceInfo');
     const purchaseTitleElement = document.querySelector('.purchaseTitle');
 
     if (priceInfoElement) priceInfoElement.style.display = 'none';
     if (purchaseTitleElement) purchaseTitleElement.style.display = 'none';
 
-    // Hide the username input and continue button
     ['username', 'continueButton', 'usernameLabel'].forEach(id => {
         const element = document.getElementById(id);
         if (element) element.style.display = 'none';
@@ -41,13 +39,11 @@ async function checkGamepassAndIssueKey(username, gamepassId = '7day-gamepass-id
                 displayKey(response.key);
             } else {
                 updateStatus(statusElement, response.message, 'red');
-                // Show retry option for expired key
                 displayRetryOption(username, gamepassId);
             }
         } else {
             updateStatus(statusElement, 'Gamepass not owned. Redirecting to purchase...', 'red');
             window.open(response.gamepassLink, '_blank');
-            // Start verification process after redirect
             await startPurchaseVerification(username, gamepassId);
         }
     } catch (error) {
@@ -86,7 +82,6 @@ async function startPurchaseVerification(username, gamepassId) {
             }
         }, 5000);
 
-        // Stop checking after 5 minutes
         setTimeout(() => {
             clearInterval(checkInterval);
             updateStatus(statusElement, 'Purchase verification timed out. Please try again.', 'red');
