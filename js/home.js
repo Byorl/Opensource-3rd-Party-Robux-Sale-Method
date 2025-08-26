@@ -41,22 +41,34 @@ class ProductManager {
             return;
         }
 
-        const buttonsHtml = this.products.map(product => `
-            <div class="product-item" data-product-id="${product.id}">
-                <h3 class="product-name">${product.name}</h3>
-                <div class="price-box">
-                    <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
-                    <span class="price">${product.price}</span>
+        const buttonsHtml = this.products.map(product => {
+            const stockCount = product.stock || 0;
+            const stockClass = stockCount === 0 ? 'out-of-stock' : stockCount < 5 ? 'low-stock' : 'in-stock';
+            const stockText = stockCount === 0 ? 'Out of Stock' : `${stockCount} in stock`;
+            
+            return `
+                <div class="product-item ${stockClass}" data-product-id="${product.id}">
+                    <h3 class="product-name">${product.name}</h3>
+                    <div class="stock-indicator ${stockClass}">
+                        <span class="stock-text">${stockText}</span>
+                    </div>
+                    <div class="price-box">
+                        <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
+                        <span class="price">${product.price}</span>
+                    </div>
+                    <button class="btn" onclick="redirectToLicense('${product.id}')" ${stockCount === 0 ? 'disabled' : ''}>
+                        ${stockCount === 0 ? 'Out of Stock' : 'Purchase License'}
+                    </button>
                 </div>
-                <button class="btn" onclick="redirectToLicense('${product.id}')">
-                    Purchase License
-                </button>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         container.innerHTML = `
             <div class="products-grid">
                 ${buttonsHtml}
+            </div>
+            <div class="stock-refresh">
+                <button onclick="productManager.refreshStock()">🔄 Refresh Stock</button>
             </div>
         `;
 
@@ -76,12 +88,24 @@ class ProductManager {
             }, index * 150);
         });
     }
+
+    async refreshStock() {
+        try {
+            await this.loadProducts();
+            this.renderProducts();
+        } catch (error) {
+            console.error('Failed to refresh stock:', error);
+        }
+    }
 }
 
 function redirectToLicense(productId) {
     window.location.href = `license.html?product=${productId}`;
 }
 
+// Global instance for onclick handlers
+let productManager;
+
 document.addEventListener('DOMContentLoaded', () => {
-    new ProductManager();
+    productManager = new ProductManager();
 });
