@@ -189,22 +189,198 @@ def check_gamepass_ownership(user_id, gamepass_id, force_refresh=False):
         logger.error(f"GamePass ownership check failed: {e}")
         return None, str(e)
 
-def generate_key():
-    """Generate a gamepass key with 'ByorlHub_' prefix and only letters/numbers."""
+# Pastebin stock system functions
+def get_pastebin_stock(pastebin_url):
+    """Get current stock from Pastebin."""
+    try:
+        response = requests.get(pastebin_url, timeout=10)
+        response.raise_for_status()
+        
+        content = response.text.strip()
+        if not content or content == '{}':
+            return []
+        
+        # Parse JSON array of keys
+        stock_data = json.loads(content)
+        if isinstance(stock_data, list):
+            return stock_data
+        elif isinstance(stock_data, dict) and 'keys' in stock_data:
+            return stock_data['keys']
+        else:
+            return []
+    except Exception as e:
+        logger.error(f"Failed to fetch stock from Pastebin: {e}")
+        return []
+
+def update_pastebin_stock(pastebin_url, new_stock, api_key, username, password):
+    """Update Pastebin with new stock."""
+    try:
+        # First, get the paste key from the URL
+        paste_key = pastebin_url.split('/')[-1]
+        
+        # Login to Pastebin to get user key
+        login_data = {
+            'api_dev_key': api_key,
+            'api_user_name': username,
+            'api_user_password': password
+        }
+        
+        login_response = requests.post('https://pastebin.com/api/api_login.php', data=login_data, timeout=10)
+        if 'Bad API request' in login_response.text:
+            logger.error(f"Pastebin login failed: {login_response.text}")
+            return False
+        
+        user_key = login_response.text.strip()
+        
+        # Update the paste
+        update_data = {
+            'api_dev_key': api_key,
+            'api_user_key': user_key,
+            'api_option': 'paste',
+            'api_paste_code': json.dumps(new_stock, indent=2),
+            'api_paste_format': 'json',
+            'api_paste_name': 'ByorlHub Stock',
+            'api_paste_expire_date': 'N',  # Never expire
+            'api_paste_private': '1'  # Unlisted
+        }
+        
+        # For updating existing paste, we need to use a different approach
+        # Since Pastebin doesn't allow direct updates, we'll create a new paste
+        # You'll need to manually update the URL in config
+        update_response = requests.post('https://pastebin.com/api/api_post.php', data=update_data, timeout=10)
+        
+        if 'pastebin.com' in update_response.text:
+            logger.info(f"Stock updated successfully. New paste: {update_response.text}")
+            return True
+        else:
+            logger.error(f"Failed to update stock: {update_response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Failed to update Pastebin stock: {e}")
+        return False
+
+def add_key_to_bought_keys(bought_keys_url, key_data, api_key, username, password):
+    """Add a used key to the bought keys Pastebin."""
+    try:
+        # Get current bought keys
+        current_bought = get_pastebin_stock(bought_keys_url)
+        
+        # Add new key data
+        current_bought.append({
+            'key': key_data['key'],
+            'username': key_data['username'],
+            'gamepass_id': key_data['gamepass_id'],
+            'issued_at': key_data['issued_at'],
+            'product_name': key_data['product_name']
+        })
+        
+        # Update the bought keys pastebin
+        return update_pastebin_stock(bought_keys_url, current_bought, api_key, username, password)
+        
+    except Exception as e:
+        logger.error(f"Failed to add key to bought keys: {e}")
+        return False
+
+def get_key_from_stock(product):
+    """Get a key from stock and remove it from Pastebin."""
+    try:
+        stock_url = product.get('stockPastebinUrl')
+        if not stock_url:
+            logger.warning(f"No stock URL configured for {product['name']}")
+            return generate_fallback_key()
+        
+        # Get current stock
+        current_stock = get_pastebin_stock(stock_url)
+        
+        if not current_stock:
+            logger.warning(f"No keys in stock for {product['name']}")
+            return generate_fallback_key()
+        
+        # Take the first key
+        key = current_stock.pop(0)
+        
+        # Update stock (remove the used key)
+        config = load_products_config()
+        pastebin_config = {}
+        try:
+            with open('config/products.json', 'r') as f:
+                full_config = json.load(f)
+                pastebin_config = full_config.get('pastebin', {})
+        except:
+            pass
+        
+        if pastebin_config.get('apiKey') and pastebin_config.get('username'):
+            update_pastebin_stock(
+                stock_url, 
+                current_stock, 
+                pastebin_config['apiKey'],
+                pastebin_config['username'],
+                pastebin_config['password']
+            )
+        
+        logger.info(f"Dispensed key from stock for {product['name']}. Remaining stock: {len(current_stock)}")
+        return key
+        
+    except Exception as e:
+        logger.error(f"Failed to get key from stock: {e}")
+        return generate_fallback_key()
+
+def generate_fallback_key():
+    """Generate a fallback key when stock is empty."""
     key = secrets.token_urlsafe(16)
     key = key.replace('_', '')
-    key = f"ByorlHub_{key}"
+    key = f"ByorlHub_FALLBACK_{key}"
+    logger.warning("Generated fallback key due to stock issues")
     return key
+
+def get_stock_count(product):
+    """Get the current stock count for a product."""
+    try:
+        stock_url = product.get('stockPastebinUrl')
+        if not stock_url:
+            return 0
+        
+        current_stock = get_pastebin_stock(stock_url)
+        return len(current_stock)
+    except Exception as e:
+        logger.error(f"Failed to get stock count: {e}")
+        return 0
 
 @app.route('/products', methods=['GET'])
 def get_products():
-    """Serve the products configuration."""
+    """Serve the products configuration with stock counts."""
     try:
         with open('config/products.json', 'r') as f:
-            return jsonify(json.load(f))
+            config = json.load(f)
+            
+        # Add stock counts to each product
+        for product in config['products']:
+            product['stock'] = get_stock_count(product)
+            
+        return jsonify(config)
     except Exception as e:
         logger.error(f"Failed to load products: {e}")
         return jsonify({'error': 'Failed to load products'}), 500
+
+@app.route('/stock/<product_id>', methods=['GET'])
+def get_product_stock(product_id):
+    """Get stock count for a specific product."""
+    try:
+        config = load_products_config()
+        for gamepass_id, product in config.items():
+            if product['id'] == product_id:
+                stock_count = get_stock_count(product)
+                return jsonify({
+                    'product_id': product_id,
+                    'stock': stock_count,
+                    'product_name': product['name']
+                })
+        
+        return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        logger.error(f"Failed to get stock: {e}")
+        return jsonify({'error': 'Failed to get stock'}), 500
 
 @app.route('/admin/clear-user-data', methods=['POST'])
 def clear_user_data():
@@ -338,7 +514,31 @@ def check_gamepass():
             
             if 'ownership_lost' in user_gamepass_data:
                 logger.info(f"Detected remove/repurchase cycle for {username} - {product['name']}, issuing new key")
-                key = generate_key()
+                key = get_key_from_stock(product)
+                
+                # Add to bought keys tracking
+                try:
+                    with open('config/products.json', 'r') as f:
+                        full_config = json.load(f)
+                        pastebin_config = full_config.get('pastebin', {})
+                    
+                    if pastebin_config.get('boughtKeysUrl'):
+                        add_key_to_bought_keys(
+                            pastebin_config['boughtKeysUrl'],
+                            {
+                                'key': key,
+                                'username': username,
+                                'gamepass_id': gamepass_id,
+                                'issued_at': current_time.isoformat(),
+                                'product_name': product['name']
+                            },
+                            pastebin_config.get('apiKey', ''),
+                            pastebin_config.get('username', ''),
+                            pastebin_config.get('password', '')
+                        )
+                except Exception as e:
+                    logger.error(f"Failed to track bought key: {e}")
+                
                 user_data[username][gamepass_id] = {
                     'key_issued': True,
                     'issued_at': current_time.isoformat(),
@@ -357,7 +557,31 @@ def check_gamepass():
             if force_refresh:
                 if current_time - issued_time > timedelta(minutes=5):
                     logger.info(f"Force refresh: Key was issued over 5 minutes ago for {username} - {product['name']}, issuing new key")
-                    key = generate_key()
+                    key = get_key_from_stock(product)
+                    
+                    # Add to bought keys tracking
+                    try:
+                        with open('config/products.json', 'r') as f:
+                            full_config = json.load(f)
+                            pastebin_config = full_config.get('pastebin', {})
+                        
+                        if pastebin_config.get('boughtKeysUrl'):
+                            add_key_to_bought_keys(
+                                pastebin_config['boughtKeysUrl'],
+                                {
+                                    'key': key,
+                                    'username': username,
+                                    'gamepass_id': gamepass_id,
+                                    'issued_at': current_time.isoformat(),
+                                    'product_name': product['name']
+                                },
+                                pastebin_config.get('apiKey', ''),
+                                pastebin_config.get('username', ''),
+                                pastebin_config.get('password', '')
+                            )
+                    except Exception as e:
+                        logger.error(f"Failed to track bought key: {e}")
+                    
                     user_data[username][gamepass_id] = {
                         'key_issued': True,
                         'issued_at': current_time.isoformat(),
@@ -382,7 +606,31 @@ def check_gamepass():
             else:
                 if current_time - issued_time > timedelta(minutes=30):
                     logger.info(f"Regular check: Key was issued over 30 minutes ago for {username} - {product['name']}, allowing new key")
-                    key = generate_key()
+                    key = get_key_from_stock(product)
+                    
+                    # Add to bought keys tracking
+                    try:
+                        with open('config/products.json', 'r') as f:
+                            full_config = json.load(f)
+                            pastebin_config = full_config.get('pastebin', {})
+                        
+                        if pastebin_config.get('boughtKeysUrl'):
+                            add_key_to_bought_keys(
+                                pastebin_config['boughtKeysUrl'],
+                                {
+                                    'key': key,
+                                    'username': username,
+                                    'gamepass_id': gamepass_id,
+                                    'issued_at': current_time.isoformat(),
+                                    'product_name': product['name']
+                                },
+                                pastebin_config.get('apiKey', ''),
+                                pastebin_config.get('username', ''),
+                                pastebin_config.get('password', '')
+                            )
+                    except Exception as e:
+                        logger.error(f"Failed to track bought key: {e}")
+                    
                     user_data[username][gamepass_id] = {
                         'key_issued': True,
                         'issued_at': current_time.isoformat(),
@@ -405,7 +653,31 @@ def check_gamepass():
                         'message': 'Key retrieved successfully!'
                     })
         else:
-            key = generate_key()
+            key = get_key_from_stock(product)
+            
+            # Add to bought keys tracking
+            try:
+                with open('config/products.json', 'r') as f:
+                    full_config = json.load(f)
+                    pastebin_config = full_config.get('pastebin', {})
+                
+                if pastebin_config.get('boughtKeysUrl'):
+                    add_key_to_bought_keys(
+                        pastebin_config['boughtKeysUrl'],
+                        {
+                            'key': key,
+                            'username': username,
+                            'gamepass_id': gamepass_id,
+                            'issued_at': datetime.now().isoformat(),
+                            'product_name': product['name']
+                        },
+                        pastebin_config.get('apiKey', ''),
+                        pastebin_config.get('username', ''),
+                        pastebin_config.get('password', '')
+                    )
+            except Exception as e:
+                logger.error(f"Failed to track bought key: {e}")
+            
             user_data[username][gamepass_id] = {
                 'key_issued': True,
                 'issued_at': datetime.now().isoformat(),
