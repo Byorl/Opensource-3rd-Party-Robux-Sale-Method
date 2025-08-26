@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByorlHub - Select Plan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 15, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .logo:hover {
+            opacity: 0.8;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+        }
+
+        .breadcrumb a {
+            color: #a1a1aa;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb a:hover {
+            color: #6366f1;
+        }
+
+        .breadcrumb-separator {
+            width: 15px;
+            height: 15px;
+            color: #71717a;
+        }
+
+        .breadcrumb-current {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .back-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #6366f1;
+        }
+
+        .auth-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username-display {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .history-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .history-link:hover {
+            color: #6366f1;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .product-container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .product-showcase {
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+            display: block;
+        }
+
+        .showcase-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .showcase-top {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .showcase-left-column {
+            display: flex;
+            flex-direction: column;
+            padding: 2.5rem;
+        }
+
+        .product-showcase::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+
+        .showcase-image-section {
+            width: 700px;
+            height: 400px;
+            position: relative;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .showcase-carousel {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .showcase-image.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .showcase-image.prev {
+            transform: translateX(-100%);
+        }
+
+        .showcase-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .showcase-nav:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .showcase-prev {
+            left: 15px;
+        }
+
+        .showcase-next {
+            right: 15px;
+        }
+
+        .showcase-content {
+            flex: 1;
+            padding: 2.5rem;
+            padding-left: 4rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .showcase-bottom {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .description-section {
+            flex: 1;
+            padding: 0 2.5rem 2.5rem 2.5rem;
+        }
+
+        .plans-section-wrapper {
+            width: 400px;
+        }
+
+        .showcase-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .showcase-short-description {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 300px;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .showcase-long-description {
+            color: #a1a1aa;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border-left: 3px solid #6366f1;
+            width: 595px;
+            min-height: 160px;
+            margin-top: 1rem;
+        }
+
+        .showcase-price {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .showcase-price-value {
+            color: #6366f1;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .showcase-price-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .showcase-rating {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stars {
+            display: flex;
+            gap: 0.2rem;
+        }
+
+        .star {
+            color: #6366f1;
+            font-size: 1.5rem;
+        }
+
+        .star.empty {
+            color: #374151;
+        }
+
+        .star.partial {
+            background: linear-gradient(90deg, #6366f1 60%, #374151 60%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .rating-text {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .plans-section {
+            margin-top: 0;
+            width: 100%;
+        }
+
+        .plans-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .plans-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .plan-card {
+            background: rgba(15, 15, 25, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            height: 80px;
+            max-width: 600px;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(15, 15, 25, 0.8);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .plan-card.selected {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .plan-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+
+        .plan-left {
+            flex: 1;
+        }
+
+        .plan-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+        }
+
+        .plan-stock {
+            color: #a1a1aa;
+            font-size: 0.8rem;
+        }
+
+        .plan-stock.in-stock {
+            color: #22c55e;
+        }
+
+        .plan-stock.out-of-stock {
+            color: #ef4444;
+        }
+
+        .plan-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .plan-price {
+            color: #6366f1;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .robux-icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        .main-purchase-btn {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(107, 114, 128, 0.3);
+            color: white;
+            border: none;
+            padding: 0.7rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: not-allowed;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        .main-purchase-btn.enabled {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            cursor: pointer;
+        }
+
+        .main-purchase-btn.enabled:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .purchase-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .purchase-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .purchase-btn:disabled {
+            background: rgba(107, 114, 128, 0.3);
+            cursor: not-allowed;
+        }
+
+        .purchase-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .purchase-btn:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 4rem;
+            color: #a1a1aa;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .product-container {
+                padding: 1rem;
+            }
+            
+            .product-header h1 {
+                font-size: 2rem;
+            }
+            
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">
+                        <img src="icon/logo.svg" alt="Logo">
+                    </div>
+                    <span>ByorlHub</span>
+                </a>
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a>
+                    <svg class="breadcrumb-separator" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.10876 14L9.46582 1H10.8178L5.46074 14H4.10876Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="breadcrumb-current" id="product-breadcrumb">Product</span>
+                </div>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="back-link">← Back to Store</a>
+                <div id="user-info" style="display: none;" class="user-info">
+                    <span id="username-display" class="username-display"></span>
+                    <a href="history.html" class="history-link">Purchase History</a>
+                    <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
+                <div id="auth-section">
+                    <a href="#" id="login-btn" class="auth-btn">Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="product-container">
+        <div id="product-showcase" class="product-showcase">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading product...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class ProductManager {
+            constructor() {
+                this.products = [];
+                this.mainProducts = [];
+                this.currentProduct = null;
+                this.selectedPlan = null;
+                this.init();
+            }
+
+            async init() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const productId = urlParams.get('id');
+                
+                await this.checkAuth();
+                await this.loadProducts();
+                this.currentProduct = this.mainProducts.find(p => p.id === productId);
+                
+                if (!this.currentProduct) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                this.renderProductShowcase();
+                this.renderAccountInfo();
+            }
+
+            async checkAuth() {
+                const storedUser = localStorage.getItem('user_data');
+                if (storedUser) {
+                    try {
+                        this.user = JSON.parse(storedUser);
+                        this.renderAccountInfo(); 
+                    } catch (e) {
+                        localStorage.removeItem('user_data');
+                        localStorage.removeItem('auth_token');
+                    }
+                }
+
+                try {
+                    const response = await this.makeAuthenticatedRequest('http://localhost:5000/me');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.authenticated) {
+                            this.user = data.user;
+                            localStorage.setItem('user_data', JSON.stringify(data.user));
+                            this.renderAccountInfo(); 
+                            return;
+                        }
+                    }
+                    
+                    console.log('Server authentication failed, clearing cached data');
+                    this.user = null;
+                    localStorage.removeItem('user_data');
+                    localStorage.removeItem('auth_token');
+                    this.renderAccountInfo();
+                    
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    console.log('Network error during auth check, clearing cached data');
+                    this.user = null;
+                    localStorage.removeItem('user_data');
+                    localStorage.removeItem('auth_token');
+                    this.renderAccountInfo();
+                }
+            }
+
+            makeAuthenticatedRequest(url, options = {}) {
+                const defaultOptions = {
+                    credentials: 'include',
+                    ...options
+                };
+                
+                const authToken = localStorage.getItem('auth_token');
+                if (authToken) {
+                    defaultOptions.headers = {
+                        ...defaultOptions.headers,
+                        'Authorization': `Bearer ${authToken}`
+                    };
+                }
+                
+                return fetch(url, defaultOptions);
+            }
+
+            renderAccountInfo() {
+                const userInfo = document.getElementById('user-info');
+                const authSection = document.getElementById('auth-section');
+                const usernameDisplay = document.getElementById('username-display');
+                const logoutBtn = document.getElementById('logout-btn');
+                const loginBtn = document.getElementById('login-btn');
+
+                if (this.user && userInfo && authSection && usernameDisplay) {
+                    usernameDisplay.textContent = this.user.username;
+                    userInfo.style.display = 'flex';
+                    authSection.style.display = 'none';
+                    
+                    if (logoutBtn) {
+                        logoutBtn.onclick = this.logout.bind(this);
+                    }
+                } else if (userInfo && authSection) {
+                    userInfo.style.display = 'none';
+                    authSection.style.display = 'block';
+                    
+                    if (loginBtn) {
+                        const returnUrl = encodeURIComponent(window.location.href);
+                        loginBtn.href = `auth.html?return=${returnUrl}`;
+                    }
+                }
+            }
+
+            async logout() {
+                try {
+                    await this.makeAuthenticatedRequest('http://localhost:5000/logout', {
+                        method: 'POST'
+                    });
+                    localStorage.removeItem('user_data');
+                    localStorage.removeItem('auth_token');
+                    window.location.reload();
+                } catch (error) {
+                    console.error('Logout failed:', error);
+                    localStorage.removeItem('user_data');
+                    localStorage.removeItem('auth_token');
+                    window.location.reload();
+                }
+            }
+
+            selectPlan(planId) {
+                const planCard = document.querySelector(`[data-plan-id="${planId}"]`);
+                if (planCard && planCard.style.opacity === '0.5') {
+                    return; 
+                }
+
+                document.querySelectorAll('.plan-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+
+                if (planCard) {
+                    planCard.classList.add('selected');
+                }
+
+                this.selectedPlan = this.currentProduct.variantProducts.find(p => p.id === planId);
+                
+                if (this.selectedPlan) {
+                    const buttonElement = document.getElementById('main-purchase-btn');
+                    
+                    buttonElement.textContent = `Purchase ${this.selectedPlan.name} - ${this.selectedPlan.price} Robux`;
+                    buttonElement.disabled = false;
+                    buttonElement.classList.add('enabled');
+                    buttonElement.onclick = () => this.purchaseSelected();
+                }
+            }
+
+            purchaseSelected() {
+                if (this.selectedPlan) {
+                    window.location.href = `license.html?id=${this.currentProduct.id}&plan=${this.selectedPlan.id}`;
+                }
+            }
+
+            async loadProducts() {
+                try {
+                    const response = await fetch('http://localhost:5000/products');
+                    const data = await response.json();
+                    this.products = data.products || [];
+                    this.mainProducts = data.mainProducts || [];
+                } catch (error) {
+                    console.error('Failed to load products:', error);
+                    this.products = [];
+                    this.mainProducts = [];
+                }
+            }
+
+            renderProductShowcase() {
+                const container = document.getElementById('product-showcase');
+                if (!container || !this.currentProduct) return;
+
+                const breadcrumbElement = document.getElementById('product-breadcrumb');
+                if (breadcrumbElement) {
+                    breadcrumbElement.textContent = this.currentProduct.name;
+                }
+
+                const imagesHtml = this.currentProduct.images.map((img, index) => 
+                    `<img src="${img}" alt="${this.currentProduct.name}" class="showcase-image ${index === 0 ? 'active' : ''}">`
+                ).join('');
+                
+                const showNavigation = this.currentProduct.images.length > 1;
+
+                container.innerHTML = `
+                    <div class="showcase-main">
+                        <div class="showcase-top">
+                            <div class="showcase-left-column">
+                                <div class="showcase-image-section">
+                                    <div class="showcase-carousel">
+                                        ${imagesHtml}
+                                        ${showNavigation ? `
+                                            <button class="showcase-nav showcase-prev" onclick="productManager.previousShowcaseImage()">‹</button>
+                                            <button class="showcase-nav showcase-next" onclick="productManager.nextShowcaseImage()">›</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div class="showcase-long-description">
+                                    ${this.currentProduct.description}
+                                </div>
+                            </div>
+                            
+                            <div class="showcase-content">
+                                <h1 class="showcase-title">${this.currentProduct.name}</h1>
+                                <p class="showcase-short-description">Premium Roblox executor with advanced features</p>
+                                
+                                <div class="showcase-rating">
+                                    <div class="stars">
+                                        <span class="star">★</span>
+                                        <span class="star">★</span>
+                                        <span class="star">★</span>
+                                        <span class="star">★</span>
+                                        <span class="star partial">★</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="showcase-price">
+                                    <img src="icon/Robux.svg" alt="Robux" class="showcase-price-icon">
+                                    <span class="showcase-price-value">${this.currentProduct.minPrice}</span>
+                                </div>
+                                
+                                <div class="plans-section">
+                                    <h3 class="plans-title">Choose Your Plan</h3>
+                                    <div id="plans-container" class="plans-container">
+                                        <div class="loading-container">
+                                            <div class="loading-spinner"></div>
+                                            <p>Loading plans...</p>
+                                        </div>
+                                    </div>
+                                    <button class="main-purchase-btn" id="main-purchase-btn" disabled>
+                                        Select a plan to purchase
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                this.renderPlans();
+                
+                if (this.currentProduct.images.length > 1) {
+                    this.startAutoRotation();
+                }
+            }
+
+            startAutoRotation() {
+                if (this.autoRotationInterval) {
+                    clearInterval(this.autoRotationInterval);
+                }
+                
+                this.autoRotationInterval = setInterval(() => {
+                    this.nextShowcaseImage();
+                }, 4000);
+            }
+
+            stopAutoRotation() {
+                if (this.autoRotationInterval) {
+                    clearInterval(this.autoRotationInterval);
+                    this.autoRotationInterval = null;
+                }
+            }
+
+            nextShowcaseImage() {
+                const images = document.querySelectorAll('.showcase-image');
+                if (images.length <= 1) return;
+                
+                const activeImage = document.querySelector('.showcase-image.active');
+                const currentIndex = Array.from(images).indexOf(activeImage);
+                const nextIndex = (currentIndex + 1) % images.length;
+                
+                activeImage.classList.add('prev');
+                activeImage.classList.remove('active');
+                
+                images[nextIndex].classList.add('active');
+                images[nextIndex].classList.remove('prev');
+                
+                setTimeout(() => {
+                    activeImage.classList.remove('prev');
+                }, 500);
+            }
+
+            previousShowcaseImage() {
+                this.stopAutoRotation();
+                
+                const images = document.querySelectorAll('.showcase-image');
+                if (images.length <= 1) return;
+                
+                const activeImage = document.querySelector('.showcase-image.active');
+                const currentIndex = Array.from(images).indexOf(activeImage);
+                const prevIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+                
+                activeImage.classList.add('prev');
+                activeImage.classList.remove('active');
+                
+                images[prevIndex].classList.add('active');
+                images[prevIndex].classList.remove('prev');
+                
+                setTimeout(() => {
+                    activeImage.classList.remove('prev');
+                }, 500);
+                
+                setTimeout(() => {
+                    this.startAutoRotation();
+                }, 8000);
+            }
+
+            renderPlans() {
+                const container = document.getElementById('plans-container');
+                if (!container || !this.currentProduct) return;
+
+                const variants = this.currentProduct.variantProducts;
+                if (variants.length === 0) {
+                    container.innerHTML = `
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p>Loading plans...</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const plansHtml = variants.map(product => {
+                    const stockCount = product.stock;
+                    let stockClass, stockText, isDisabled = false;
+                    
+                    if (stockCount === 'unavailable' || stockCount === 'not_configured') {
+                        stockClass = 'out-of-stock';
+                        stockText = 'Unavailable';
+                        isDisabled = true;
+                    } else if (stockCount === 0) {
+                        stockClass = 'out-of-stock';
+                        stockText = 'Out of Stock';
+                        isDisabled = true;
+                    } else {
+                        stockClass = 'in-stock';
+                        stockText = `${stockCount}`;
+                    }
+                    
+                    return `
+                        <div class="plan-card" onclick="productManager.selectPlan('${product.id}')" data-plan-id="${product.id}" ${isDisabled ? 'style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                            <div class="plan-left">
+                                <div class="plan-name">${product.name}</div>
+                                <div class="plan-stock ${stockClass}">Stock: ${stockText}</div>
+                            </div>
+                            
+                            <div class="plan-right">
+                                <div class="plan-price">
+                                    <img src="icon/Robux.svg" alt="Robux" class="robux-icon">
+                                    <span>${product.price}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = plansHtml;
+            }
+        }
+
+        function redirectToLicense(productId) {
+            window.location.href = `license.html?product=${productId}`;
+        }
+
+        let productManager;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            productManager = new ProductManager();
+        });
+    </script>
+</body>
+</html>
