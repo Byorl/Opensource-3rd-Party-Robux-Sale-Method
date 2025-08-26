@@ -44,38 +44,34 @@ class ProductManager {
         const buttonsHtml = this.products.map(product => {
             const stockCount = product.stock || 0;
             const stockClass = stockCount === 0 ? 'out-of-stock' : stockCount < 10 ? 'low-stock' : 'in-stock';
-            const stockText = stockCount === 0 ? 'Out of Stock' : `${stockCount} Available`;
-            const stockIcon = stockCount === 0 ? '❌' : stockCount < 10 ? '⚠️' : '✅';
+            const stockText = stockCount === 0 ? 'Out of Stock' : `${stockCount} in stock`;
+            const stockIcon = stockCount === 0 ? '●' : stockCount < 10 ? '●' : '●';
             
             return `
                 <div class="product-item ${stockClass}" data-product-id="${product.id}">
-                    <div class="product-header">
-                        <h3 class="product-name">${product.name}</h3>
-                        <div class="product-duration">${product.duration || 'Access Duration'}</div>
-                    </div>
-                    
-                    <div class="product-body">
-                        <div class="price-section">
-                            <div class="price-label">Price</div>
-                            <div class="price-box">
-                                <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
-                                <span class="price">${product.price}</span>
+                    <div class="product-content">
+                        <div class="product-header">
+                            <div class="product-info">
+                                <h3>${product.name}</h3>
+                                <div class="product-duration">${product.duration || 'Access Duration'}</div>
                             </div>
-                        </div>
-                        
-                        <div class="stock-section">
-                            <div class="stock-label">Availability</div>
-                            <div class="stock-indicator ${stockClass}">
+                            <div class="stock-badge ${stockClass}">
                                 <span class="stock-icon">${stockIcon}</span>
                                 <span class="stock-text">${stockText}</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="product-footer">
+                        
+                        <div class="product-body">
+                            <div class="price-display">
+                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon">
+                                <span class="price">${product.price}</span>
+                                <span class="price-label">Robux</span>
+                            </div>
+                        </div>
+                        
                         <button class="btn primary-btn" onclick="redirectToLicense('${product.id}')" ${stockCount === 0 ? 'disabled' : ''}>
                             <span class="btn-text">${stockCount === 0 ? 'Out of Stock' : 'Purchase License'}</span>
-                            <span class="btn-icon">${stockCount === 0 ? '🚫' : '🚀'}</span>
+                            <span class="btn-icon">${stockCount === 0 ? '×' : '→'}</span>
                         </button>
                     </div>
                 </div>
@@ -119,7 +115,6 @@ function redirectToLicense(productId) {
     window.location.href = `license.html?product=${productId}`;
 }
 
-// Global instance for onclick handlers
 let productManager;
 
 document.addEventListener('DOMContentLoaded', () => {
