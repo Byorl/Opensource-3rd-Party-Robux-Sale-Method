@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase ByorlHub License</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="product-info">
+            <!-- Product info will be loaded dynamically -->
+        </div>
+        
+        <form id="form">
+            <label id="usernameLabel" for="username">Roblox Username</label>
+            <input type="text" id="username" placeholder="Enter your Roblox username..." required>
+            <br>
+            <button class="btn" id="continueButton" type="button" onclick="validatePurchase()">Continue</button>
+        </form>
+        
+        <div id="status"></div>
+        <div id="keyContainer" style="display:none;"> 
+            <input type="text" id="key" readonly />
+            <button class="btn copy-btn" onclick="copyKey()">Copy Key</button>
+        </div>
+        
+        <div class="back-link">
+            <a href="index.html">← Back to License Selection</a>
+        </div>
+    </div>
+
+    <script src="js/license.js"></script>
+</body>
+</html>
