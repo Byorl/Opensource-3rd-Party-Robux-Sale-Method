@@ -1,31 +1,49 @@
 {
+  "mainProducts": [
+    {
+      "id": "product-id-1",
+      "name": "PRODUCT_1",
+      "description": "Premium Roblox executor with advanced features, regular updates, and 24/7 support. Get access to the most powerful scripting tools available.",
+      "mainImage": "https://avatars.githubusercontent.com/u/59534560?v=4&size=64",
+      "images": [
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeKOOpLy92UjzQxq8NCxgxOQJbj_YVdfHO_g&s",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4aBhloyMLx5qA6G6wSEi0s9AvDu1r7utrbQ&s",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHsHjqVgmo-RyH-pXfZp3_HERNuAE6GLVN3w&s"
+      ],
+      "variants": [
+        "7day",
+        "30day"
+      ]
+    }
+  ],
   "products": [
     {
       "id": "7day",
-      "name": "7 Day License",
+      "name": "YOUR_PROJECT_NAME 7D",
       "price": 1,
-      "gamepassId": "YOUR-7DAY-GAMEPASS-ID",
-      "gamepassUrl": "YOUR-7DAY-GAMEPASS-URL",
-      "description": "Access ByorlHub for 7 days",
+      "gamepassId": "YOUR_GAMEPASS_ID",
+      "gamepassUrl": "YOUR_GAMEPASS_URL",
+      "description": "Access YOUR_PROJECT_NAME for 7 days",
       "duration": "7 days",
-      "stockGithubFile": "YOUR-7DAY-STOCK-FILE-NAME"
+      "stockGithubFile": "7-Day Stock",
+      "parentProduct": "PRODUCT_PARENT_NAME-hub"
     },
     {
       "id": "30day",
-      "name": "30 Day License",
-      "price": 2,
-      "gamepassId": "YOUR-30DAY-GAMEPASS-ID",
-      "gamepassUrl": "YOUR-30DAY-GAMEPASS-URL",
-      "description": "Access ByorlHub for 30 days",
+      "name": "YOUR_PROJECT_NAME 30D",
+      "price": 1,
+      "gamepassId": "YOUR_GAMEPASS_ID",
+      "gamepassUrl": "YOUR_GAMEPASS_URL",
+      "description": "Access YOUR_PROJECT_NAME for 30 days",
       "duration": "30 days",
-      "stockGithubFile": "YOUR-30DAY-STOCK-FILE-NAME"
+      "stockGithubFile": "30-Day Stock",
+      "parentProduct": "PRODUCT_PARENT_NAME"
     }
   ],
   "github": {
     "token": "YOUR_GITHUB_TOKEN",
     "repo_owner": "YOUR_GITHUB_USERNAME",
-    "repo_name": "YOUR_REPO_NAME",
-    "stock_file": "YOUR-7DAYSTOCK-FILE-NAME",
-    "bought_file": "YOUR-KEYSBOUGHT-FILE-NAME"
+    "repo_name": "YOURPROJECT_Keys",
+    "bought_file": "Keys Bought"
   }
 }
