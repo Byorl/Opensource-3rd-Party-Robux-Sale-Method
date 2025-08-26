@@ -204,4 +204,71 @@ button:active {
 
 .retry-btn:hover {
     background-color: #0056b3 !important;
+}.
+manual-check-container {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 1px solid #2196f3;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.manual-check-btn {
+    background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3) !important;
+}
+
+.manual-check-btn:hover {
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 12px rgba(33, 150, 243, 0.4) !important;
+}
+
+.manual-check-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3) !important;
+}
+
+/* Pulse animation for waiting state */
+.waiting-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+    }
+}
+
+/* Improved status messages */
+#status p {
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+/* Better mobile responsiveness */
+@media (max-width: 600px) {
+    .manual-check-container {
+        margin: 15px 0;
+        padding: 15px;
+    }
+    
+    .manual-check-btn {
+        width: 100% !important;
+        padding: 15px !important;
+    }
 }
