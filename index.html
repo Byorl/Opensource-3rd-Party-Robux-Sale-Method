@@ -1,37 +1,792 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByorlHub - Choose Your License</title>
-    <link rel="stylesheet" href="css/unified.css">
+    <title>ByorlHub - Premium Roblox Tools</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 15, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem 0 3rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            padding-right: 2rem;
+        }
+
+        .nav-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+        }
+
+        .auth-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+
+
+        .products-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #ffffff;
+        }
+
+        .search-container {
+            max-width: 500px;
+            margin: 0 auto 3rem auto;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-bar:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: rgba(15, 15, 25, 0.95);
+        }
+
+        .search-bar::placeholder {
+            color: #a1a1aa;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a1a1aa;
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .search-results-info {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #a1a1aa;
+            font-size: 0.9rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: #a1a1aa;
+        }
+
+        .no-results h3 {
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+
+
+        .products-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(324px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.5rem;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 324px;
+            height: auto;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .product-image-section {
+            width: 100%;
+            height: 120px;
+            position: relative;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .featured-product .product-image-section {
+            width: 280px;
+            height: 170px;
+        }
+
+        .image-carousel {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .carousel-image.active {
+            opacity: 1;
+        }
+
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .carousel-nav:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .carousel-prev {
+            left: 10px;
+        }
+
+        .carousel-next {
+            right: 10px;
+        }
+
+        .product-content {
+            flex: 1;
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-header {
+            margin-bottom: 1rem;
+        }
+
+        .product-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-description {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+            max-width: 350px;
+        }
+
+        .compact-product .product-description {
+            display: none;
+        }
+
+        .product-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .compact-product .product-stats {
+            display: none;
+        }
+
+        .product-image-section {
+            width: 100%;
+            height: 172px;
+            margin: 0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .product-title {
+            font-size: 1.25rem;
+            margin: 0.5rem 0;
+            text-align: center;
+            color: #ffffff;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .product-price-stock-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            margin: 0.5rem 0;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 1.125rem;
+        }
+
+        .price-label {
+            color: #a1a1aa;
+            font-weight: 400;
+        }
+
+        .price-value {
+            color: #ffffff;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .product-stock {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+        }
+
+        .product-stock.in-stock {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        .product-stock.out-of-stock {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .stat-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #a1a1aa;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .price-value {
+            color: #6366f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .robux-icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        .stock-value.in-stock {
+            color: #22c55e;
+        }
+
+        .stock-value.out-of-stock {
+            color: #ef4444;
+        }
+
+        .purchase-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .purchase-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .purchase-btn:hover::before {
+            left: 100%;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 4rem;
+            color: #a1a1aa;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username-display {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .history-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .history-link:hover {
+            color: #6366f1;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .featured-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem 2rem 2rem;
+        }
+
+        .featured-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .featured-carousel {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .featured-slides {
+            display: flex;
+            transition: transform 0.5s ease;
+        }
+
+        .featured-slide {
+            min-width: 100%;
+            padding: 0 0.5rem;
+        }
+
+        .featured-card {
+            width: 100%;
+            max-width: 800px;
+            height: 300px;
+            position: relative;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .featured-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 10;
+        }
+
+        .featured-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(10, 10, 10, 0.8) 0%, rgba(10, 10, 10, 0.4) 50%, transparent 100%);
+            z-index: 20;
+        }
+
+        .featured-price-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            z-index: 30;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .featured-price-label {
+            color: #a1a1aa;
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .featured-price-value {
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .featured-content {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            max-width: 500px;
+            z-index: 30;
+        }
+
+        .featured-product-title {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .featured-description {
+            color: #a1a1aa;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .featured-purchase-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #ffffff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .featured-purchase-btn:hover {
+            background: linear-gradient(135deg, #5855eb, #7c3aed);
+        }
+
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .carousel-dot.active {
+            background: #6366f1;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .featured-title {
+                font-size: 2rem;
+            }
+
+            .featured-card {
+                height: 250px;
+            }
+
+            .featured-price-badge {
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.5rem 0.75rem;
+                min-width: 120px;
+            }
+
+            .featured-content {
+                bottom: 0.5rem;
+                left: 0.5rem;
+                max-width: 300px;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .nav-container {
+                padding: 0 1rem;
+            }
+
+            .search-container {
+                max-width: 90%;
+                margin: 0 auto 2rem auto;
+            }
+
+            .search-bar {
+                font-size: 0.9rem;
+                padding: 0.875rem 0.875rem 0.875rem 2.5rem;
+            }
+
+            .search-icon {
+                left: 0.875rem;
+                font-size: 1rem;
+            }
+
+            .search-bar::placeholder {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
 </head>
+
 <body>
-    <div class="page-wrapper">
-        <div class="container">
-            <div class="header">
-                <div class="logo">
-                    <div class="logo-icon">🚀</div>
-                    <h1>ByorlHub</h1>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="icon/logo.svg" alt="Logo">
                 </div>
-                <p class="subtitle">Choose Your License Plan</p>
+                <span>ByorlHub</span>
             </div>
-            
-            <div class="content">
-                <div id="products-container">
-                    <!-- Products will be loaded dynamically -->
+            <div class="nav-links">
+                <div id="user-info" style="display: none;" class="user-info">
+                    <span id="username-display" class="username-display"></span>
+                    <a href="history.html" class="history-link">Purchase History</a>
+                    <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
+                <div id="auth-section">
+                    <a href="#" id="login-btn" class="auth-btn">Login</a>
                 </div>
             </div>
-            
-            <div class="footer">
-                <p>Secure • Instant • Reliable</p>
+        </div>
+    </nav>
+
+    <div class="featured-section">
+        <h2 class="featured-title">Featured Products</h2>
+        <div class="featured-carousel">
+            <div id="featured-slides" class="featured-slides">
+                <!-- Featured products will be loaded here -->
+            </div>
+            <div id="carousel-dots" class="carousel-dots">
+                <!-- Dots will be generated here -->
             </div>
         </div>
     </div>
 
+    <div class="products-section">
+        <h2 class="section-title">Our Products</h2>
+
+        <div class="search-container">
+            <div class="search-icon">🔍</div>
+            <input type="text" class="search-bar" id="product-search"
+                placeholder="Search for executors, tools, and more... (Press 'S' to focus)" autocomplete="off">
+        </div>
+
+        <div id="search-results-info" class="search-results-info" style="display: none;"></div>
+
+        <div id="products-container" class="products-container"></div>
+    </div>
+    </div>
+
     <script src="js/home.js"></script>
 </body>
+
 </html>
