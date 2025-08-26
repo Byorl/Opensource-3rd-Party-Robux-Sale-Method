@@ -22,7 +22,15 @@ class LicenseManager {
 
     async loadProduct(productId) {
         try {
-            const response = await fetch('config/products.json');
+            // Try to load from server first, fallback to local file
+            let response;
+            try {
+                response = await fetch('http://localhost:5000/products');
+            } catch (serverError) {
+                console.warn('Server not available, loading from local file');
+                response = await fetch('config/products.json');
+            }
+            
             const data = await response.json();
             this.product = data.products.find(p => p.id === productId);
             
