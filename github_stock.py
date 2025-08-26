@@ -182,9 +182,9 @@ def test_github_connection():
     """Test GitHub connection and permissions."""
     
     config = {
-        "token": "YOUR_GITHUB_TOKEN",
-        "repo_owner": "YOUR_GITHUB_USERNAME",
-        "repo_name": "YOUR_GITHUB_REPO_NAME"
+        "token": "YOUR-GITHUB-TOKEN",
+        "repo_owner": "YOUR-GITHUB-USERNAME",
+        "repo_name": "YOUR-REPO-NAME"
     }
     
     print("🔍 Testing GitHub Connection...")
