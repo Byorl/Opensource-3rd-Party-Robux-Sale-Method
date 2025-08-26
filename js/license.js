@@ -3,7 +3,11 @@ class LicenseManager {
         this.product = null;
         this.rateLimitCache = new Map();
         this.purchaseAttempts = new Map();
+        this.isWaitingForPurchase = false;
+        this.purchaseCheckInterval = null;
+        this.currentUsername = null;
         this.init();
+        this.setupVisibilityDetection();
     }
 
     async init() {
@@ -167,16 +171,128 @@ class LicenseManager {
         }
     }
 
+    setupVisibilityDetection() {
+        // Detect when user returns to the tab
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.isWaitingForPurchase && this.currentUsername) {
+                console.log('User returned to tab, checking purchase status...');
+                this.checkPurchaseOnReturn();
+            }
+        });
+
+        // Also detect focus events as backup
+        window.addEventListener('focus', () => {
+            if (this.isWaitingForPurchase && this.currentUsername) {
+                console.log('Window focused, checking purchase status...');
+                setTimeout(() => this.checkPurchaseOnReturn(), 1000);
+            }
+        });
+    }
+
+    async checkPurchaseOnReturn() {
+        if (!this.isWaitingForPurchase || !this.currentUsername) return;
+
+        try {
+            const response = await this.fetchGamepassCheck(this.currentUsername);
+            
+            if (response.hasGamePass) {
+                this.stopPurchaseVerification();
+                if (response.keyIssued) {
+                    this.updateStatus('Welcome back! Purchase detected and completed!', 'green');
+                    this.displayKey(response.key);
+                } else {
+                    this.updateStatus('Purchase detected, but key was already claimed.', 'red');
+                    this.displayRetryOption(this.currentUsername);
+                }
+            } else {
+                // Still no purchase, show manual check button
+                this.showManualCheckOption();
+            }
+        } catch (error) {
+            console.error('Error checking purchase on return:', error);
+        }
+    }
+
+    showManualCheckOption() {
+        const statusElement = document.getElementById('status');
+        
+        // Only add the button if it doesn't exist
+        if (!statusElement.querySelector('.manual-check-btn')) {
+            const manualCheckContainer = document.createElement('div');
+            manualCheckContainer.className = 'manual-check-container';
+            manualCheckContainer.style.marginTop = '20px';
+            
+            manualCheckContainer.innerHTML = `
+                <p style="color: #666; margin-bottom: 15px;">
+                    🔄 Returned from purchase? Click below to check if you've bought the gamepass:
+                </p>
+                <button class="btn manual-check-btn" onclick="licenseManager.manualPurchaseCheck()">
+                    I have purchased the gamepass
+                </button>
+            `;
+            
+            statusElement.appendChild(manualCheckContainer);
+        }
+    }
+
+    async manualPurchaseCheck() {
+        if (!this.currentUsername) return;
+
+        // Remove manual check button
+        const manualCheckContainer = document.querySelector('.manual-check-container');
+        if (manualCheckContainer) {
+            manualCheckContainer.remove();
+        }
+
+        this.updateStatus('Checking your purchase...', 'gray');
+
+        try {
+            const response = await this.fetchGamepassCheck(this.currentUsername);
+            
+            if (response.hasGamePass) {
+                this.stopPurchaseVerification();
+                if (response.keyIssued) {
+                    this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
+                    this.displayKey(response.key);
+                } else {
+                    this.updateStatus('Purchase confirmed, but key was already claimed.', 'red');
+                    this.displayRetryOption(this.currentUsername);
+                }
+            } else {
+                this.updateStatus('No purchase detected yet. Make sure you\'ve completed the purchase.', 'orange');
+                // Re-show the manual check option after a delay
+                setTimeout(() => this.showManualCheckOption(), 3000);
+            }
+        } catch (error) {
+            this.updateStatus('Error checking purchase. Please try again.', 'red');
+            setTimeout(() => this.showManualCheckOption(), 2000);
+        }
+    }
+
+    stopPurchaseVerification() {
+        this.isWaitingForPurchase = false;
+        if (this.purchaseCheckInterval) {
+            clearInterval(this.purchaseCheckInterval);
+            this.purchaseCheckInterval = null;
+        }
+    }
+
     async startPurchaseVerification(username) {
-        this.updateStatus('Waiting for purchase... (This may take up to 5 minutes)', 'gray');
+        this.isWaitingForPurchase = true;
+        this.currentUsername = username;
+        
+        this.updateStatus('Waiting for purchase... We\'ll automatically detect when you return!', 'gray');
+        
+        // Show the manual check option immediately
+        setTimeout(() => this.showManualCheckOption(), 2000);
 
         return new Promise((resolve, reject) => {
-            const checkInterval = setInterval(async () => {
+            this.purchaseCheckInterval = setInterval(async () => {
                 try {
                     const response = await this.fetchGamepassCheck(username);
 
                     if (response.hasGamePass) {
-                        clearInterval(checkInterval);
+                        this.stopPurchaseVerification();
                         if (response.keyIssued) {
                             this.updateStatus('Purchase Completed!', 'green');
                             this.displayKey(response.key);
@@ -187,18 +303,20 @@ class LicenseManager {
                         resolve();
                     }
                 } catch (error) {
-                    clearInterval(checkInterval);
+                    this.stopPurchaseVerification();
                     this.handleValidationError(error);
                     reject(error);
                 }
-            }, 8000); // Check every 8 seconds to reduce rate limiting
+            }, 12000); // Check every 12 seconds to be more gentle on rate limiting
 
             // Timeout after 5 minutes
             setTimeout(() => {
-                clearInterval(checkInterval);
-                this.updateStatus('Purchase verification timed out. Please try again.', 'red');
-                this.displayRetryButton();
-                reject(new Error('Verification timeout'));
+                if (this.isWaitingForPurchase) {
+                    this.stopPurchaseVerification();
+                    this.updateStatus('Auto-check timed out, but you can still check manually.', 'orange');
+                    this.showManualCheckOption();
+                    reject(new Error('Verification timeout'));
+                }
             }, 300000);
         });
     }
@@ -298,16 +416,41 @@ class LicenseManager {
 
 function copyKey() {
     const keyElement = document.getElementById('key');
-    keyElement.select();
-    keyElement.setSelectionRange(0, 99999);
-    document.execCommand('copy');
     
-    const copyBtn = document.querySelector('.copy-btn');
-    const originalText = copyBtn.innerText;
-    copyBtn.innerText = 'Copied!';
-    setTimeout(() => {
-        copyBtn.innerText = originalText;
-    }, 2000);
+    // Modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(keyElement.value).then(() => {
+            showCopySuccess();
+        }).catch(() => {
+            // Fallback to older method
+            fallbackCopy();
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopy();
+    }
+    
+    function fallbackCopy() {
+        keyElement.select();
+        keyElement.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            showCopySuccess();
+        } catch (err) {
+            console.error('Copy failed:', err);
+        }
+    }
+    
+    function showCopySuccess() {
+        const copyBtn = document.querySelector('.copy-btn');
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = 'Copied!';
+        copyBtn.style.backgroundColor = '#28a745';
+        setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.style.backgroundColor = '';
+        }, 2000);
+    }
 }
 
 // Global functions for onclick handlers
