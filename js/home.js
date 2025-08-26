@@ -11,7 +11,6 @@ class ProductManager {
 
     async loadProducts() {
         try {
-            // Try to load from server first, fallback to local file
             let response;
             try {
                 response = await fetch('http://localhost:5000/products');
@@ -19,7 +18,7 @@ class ProductManager {
                 console.warn('Server not available, loading from local file');
                 response = await fetch('config/products.json');
             }
-            
+
             const data = await response.json();
             this.products = data.products;
         } catch (error) {
@@ -61,17 +60,15 @@ class ProductManager {
             </div>
         `;
 
-        // Add click animations
         this.addProductAnimations();
     }
 
     addProductAnimations() {
         const productItems = document.querySelectorAll('.product-item');
         productItems.forEach((item, index) => {
-            // Stagger the entrance animation
             item.style.opacity = '0';
             item.style.transform = 'translateY(20px)';
-            
+
             setTimeout(() => {
                 item.style.transition = 'all 0.5s ease';
                 item.style.opacity = '1';
@@ -85,7 +82,6 @@ function redirectToLicense(productId) {
     window.location.href = `license.html?product=${productId}`;
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     new ProductManager();
 });
