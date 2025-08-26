@@ -147,6 +147,36 @@ class GitHubStockManager:
         except Exception as e:
             logger.error(f"Failed to add bought key: {e}")
             return False
+    
+    def get_all_existing_keys(self, stock_files: List[str], bought_files: List[str]) -> set:
+        """Get all existing keys from stock and bought files to prevent duplicates."""
+        all_keys = set()
+        
+        for file_path in stock_files:
+            try:
+                keys = self.get_file_content(file_path)
+                all_keys.update(keys)
+                logger.info(f"Loaded {len(keys)} keys from stock file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Could not load stock file {file_path}: {e}")
+        
+        for file_path in bought_files:
+            try:
+                bought_entries = self.get_file_content(file_path)
+                for entry in bought_entries:
+                    key = entry.split(' - ')[0].strip()
+                    if key:
+                        all_keys.add(key)
+                logger.info(f"Loaded {len(bought_entries)} bought keys from: {file_path}")
+            except Exception as e:
+                logger.warning(f"Could not load bought file {file_path}: {e}")
+        
+        logger.info(f"Total existing keys found: {len(all_keys)}")
+        return all_keys
+    
+    def is_key_duplicate(self, key: str, existing_keys: set) -> bool:
+        """Check if a key already exists."""
+        return key in existing_keys
 
 def test_github_connection():
     """Test GitHub connection and permissions."""
@@ -154,7 +184,7 @@ def test_github_connection():
     config = {
         "token": "YOUR_GITHUB_TOKEN",
         "repo_owner": "YOUR_GITHUB_USERNAME",
-        "repo_name": "YOUR_REPO_NAME"
+        "repo_name": "YOUR_GITHUB_REPO_NAME"
     }
     
     print("🔍 Testing GitHub Connection...")
