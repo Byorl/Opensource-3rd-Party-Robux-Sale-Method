@@ -256,4 +256,81 @@ body {
     .product-name {
         font-size: 18px;
     }
+}/* Stock
+ indicator styling */
+.stock-indicator {
+    padding: 8px 12px;
+    border-radius: 20px;
+    margin: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.stock-indicator.in-stock {
+    background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+    color: white;
+}
+
+.stock-indicator.low-stock {
+    background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+    color: white;
+}
+
+.stock-indicator.out-of-stock {
+    background: linear-gradient(135deg, #d63031 0%, #b2bec3 100%);
+    color: white;
+}
+
+/* Product item states */
+.product-item.out-of-stock {
+    opacity: 0.6;
+    border-color: #ddd !important;
+}
+
+.product-item.out-of-stock:hover {
+    transform: none !important;
+    border-color: #ddd !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.product-item.out-of-stock button {
+    background: linear-gradient(135deg, #b2bec3 0%, #636e72 100%) !important;
+    cursor: not-allowed !important;
+}
+
+.product-item.out-of-stock button:hover {
+    background: linear-gradient(135deg, #b2bec3 0%, #636e72 100%) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.product-item.low-stock {
+    border-color: #fdcb6e !important;
+}
+
+.product-item.low-stock:hover {
+    border-color: #e17055 !important;
+}
+
+/* Stock refresh button */
+.stock-refresh {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.stock-refresh button {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.stock-refresh button:hover {
+    background: linear-gradient(135deg, #0984e3 0%, #0056b3 100%);
+    transform: translateY(-2px);
 }
