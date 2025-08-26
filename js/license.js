@@ -50,6 +50,9 @@ class LicenseManager {
         const container = document.getElementById('product-info');
         if (!container || !this.product) return;
 
+        // Remove loading state
+        container.classList.remove('loading-state');
+        
         container.innerHTML = `
             <h1 class="purchaseTitle">Purchase ${this.product.name}</h1>
             <div class="priceInfo">
@@ -60,6 +63,19 @@ class LicenseManager {
                 <p class="duration">${this.product.duration}</p>
             </div>
         `;
+
+        // Show the form
+        const form = document.getElementById('form');
+        const purchaseForm = document.querySelector('.purchase-form');
+        if (form && purchaseForm) {
+            purchaseForm.classList.remove('loading-state');
+            form.style.display = 'block';
+            // Remove loading placeholder
+            const placeholder = purchaseForm.querySelector('.loading-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+        }
     }
 
     checkExistingPurchase() {
@@ -71,7 +87,8 @@ class LicenseManager {
             const purchaseData = JSON.parse(existingPurchase);
             const now = Date.now();
 
-            if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000) {
+            // Only show warning if there was a successful purchase (has keyIssued flag)
+            if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000 && purchaseData.keyIssued) {
                 document.getElementById('username').value = username;
                 this.showExistingPurchaseWarning();
             }
@@ -105,13 +122,15 @@ class LicenseManager {
         const key = `${username}_${this.product.id}`;
         const attempts = this.purchaseAttempts.get(key) || 0;
         this.purchaseAttempts.set(key, attempts + 1);
+        localStorage.setItem('lastUsername', username);
+    }
 
+    trackSuccessfulPurchase(username) {
         const purchaseKey = `purchase_${this.product.id}_${username}`;
         localStorage.setItem(purchaseKey, JSON.stringify({
-            attempts: attempts + 1,
+            keyIssued: true,
             timestamp: Date.now()
         }));
-        localStorage.setItem('lastUsername', username);
     }
 
     async validatePurchase() {
@@ -144,6 +163,12 @@ class LicenseManager {
             const element = document.getElementById(id);
             if (element) element.style.display = 'none';
         });
+        
+        // Also hide the entire purchase form container
+        const purchaseForm = document.querySelector('.purchase-form');
+        if (purchaseForm) {
+            purchaseForm.style.display = 'none';
+        }
     }
 
     async checkGamepassAndIssueKey(username) {
@@ -154,6 +179,7 @@ class LicenseManager {
                 if (response.keyIssued && response.key) {
                     this.updateStatus('Purchase Completed!', 'green');
                     this.displayKey(response.key);
+                    this.trackSuccessfulPurchase(username);
                 } else {
                     this.updateStatus(response.message || 'Error generating key', 'red');
                     this.displayRetryButton();
@@ -204,6 +230,7 @@ class LicenseManager {
                 if (response.keyIssued && response.key) {
                     this.updateStatus('Welcome back! Purchase detected and completed!', 'green');
                     this.displayKey(response.key);
+                    this.trackSuccessfulPurchase(this.currentUsername);
                 } else {
                     this.updateStatus('Purchase detected, but there was an issue with key generation.', 'red');
                     this.displayRetryButton();
@@ -255,6 +282,7 @@ class LicenseManager {
                 if (response.keyIssued && response.key) {
                     this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
                     this.displayKey(response.key);
+                    this.trackSuccessfulPurchase(this.currentUsername);
                 } else {
                     this.updateStatus('Purchase confirmed, but there was an issue with key generation.', 'red');
                     this.displayRetryButton();
@@ -295,6 +323,7 @@ class LicenseManager {
                         if (response.keyIssued) {
                             this.updateStatus('Purchase Completed!', 'green');
                             this.displayKey(response.key);
+                            this.trackSuccessfulPurchase(username);
                         } else {
                             this.updateStatus('Key already claimed for this gamepass.', 'red');
                             this.displayRetryOption(username);
