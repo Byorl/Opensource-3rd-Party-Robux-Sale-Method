@@ -11,29 +11,11 @@
         <h1 class="purchaseTitle">Choose Your ByorlHub License</h1>
         <p class="instruction">Select one of the options below to proceed with the purchase:</p>
         
-        <div class="button-container">
-            <button class="btn" onclick="redirectToLicense('7')">7 Day License</button>
-            <button class="btn" onclick="redirectToLicense('30')">30 Day License</button>
-        </div>
-
-        <div class="price-container">
-            <div class="price-box" id="price-7">
-                <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
-                <span class="price">1</span> 
-            </div>
-            <div class="price-box" id="price-30">
-                <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
-                <span class="price">2</span>
-            </div>
+        <div id="products-container">
+            <!-- Products will be loaded dynamically -->
         </div>
     </div>
 
-    <script>
-        function redirectToLicense(days) {
-            let folderPath = 'Licenses/';
-            let fileName = days === '7' ? 'Byorlhub7DayLicense.html' : 'Byorlhub30DayLicense.html';
-            window.location.href = folderPath + fileName;
-        }
-    </script>
+    <script src="js/home.js"></script>
 </body>
 </html>
