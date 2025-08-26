@@ -133,3 +133,75 @@ button:active {
 #status {
     text-align: center;
 }
+.duration {
+    font-size: 14px;
+    color: #666;
+    margin-left: 15px;
+    font-style: italic;
+}
+
+.warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.warning p {
+    margin: 0;
+    color: #856404;
+}
+
+.retry-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.retry-container ol {
+    text-align: left;
+    margin: 15px 0;
+}
+
+.retry-container li {
+    margin: 8px 0;
+    color: #333;
+}
+
+.copy-btn {
+    width: auto !important;
+    padding: 10px 20px !important;
+    margin-top: 10px;
+    background-color: #28a745 !important;
+}
+
+.copy-btn:hover {
+    background-color: #218838 !important;
+}
+
+.back-link {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.back-link a {
+    color: #2D2F3C;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link a:hover {
+    text-decoration: underline;
+}
+
+.retry-btn {
+    background-color: #007bff !important;
+    margin-top: 15px;
+}
+
+.retry-btn:hover {
+    background-color: #0056b3 !important;
+}
