@@ -26,7 +26,6 @@ class LicenseManager {
 
     async loadProduct(productId) {
         try {
-            // Try to load from server first, fallback to local file
             let response;
             try {
                 response = await fetch('http://localhost:5000/products');
@@ -72,7 +71,6 @@ class LicenseManager {
             const purchaseData = JSON.parse(existingPurchase);
             const now = Date.now();
 
-            // Check if purchase is recent (within 24 hours)
             if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000) {
                 document.getElementById('username').value = username;
                 this.showExistingPurchaseWarning();
@@ -95,7 +93,7 @@ class LicenseManager {
         const lastAttempt = this.rateLimitCache.get(key);
         const now = Date.now();
 
-        if (lastAttempt && now - lastAttempt < 30000) { // 30 second cooldown
+        if (lastAttempt && now - lastAttempt < 30000) { 
             return true;
         }
 
@@ -108,7 +106,6 @@ class LicenseManager {
         const attempts = this.purchaseAttempts.get(key) || 0;
         this.purchaseAttempts.set(key, attempts + 1);
 
-        // Store in localStorage for persistence
         const purchaseKey = `purchase_${this.product.id}_${username}`;
         localStorage.setItem(purchaseKey, JSON.stringify({
             attempts: attempts + 1,
@@ -154,12 +151,12 @@ class LicenseManager {
             const response = await this.fetchGamepassCheck(username);
 
             if (response.hasGamePass) {
-                if (response.keyIssued) {
+                if (response.keyIssued && response.key) {
                     this.updateStatus('Purchase Completed!', 'green');
                     this.displayKey(response.key);
                 } else {
-                    this.updateStatus(response.message, 'red');
-                    this.displayRetryOption(username);
+                    this.updateStatus(response.message || 'Error generating key', 'red');
+                    this.displayRetryButton();
                 }
             } else {
                 this.updateStatus('Gamepass not owned. Redirecting to purchase...', 'red');
@@ -172,17 +169,24 @@ class LicenseManager {
     }
 
     setupVisibilityDetection() {
-        // Detect when user returns to the tab
+        let wasHidden = false;
+        
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && this.isWaitingForPurchase && this.currentUsername) {
+            if (document.hidden) {
+                wasHidden = true;
+            } else if (wasHidden && this.isWaitingForPurchase && this.currentUsername) {
                 console.log('User returned to tab, checking purchase status...');
                 this.checkPurchaseOnReturn();
             }
         });
 
-        // Also detect focus events as backup
+        let wasBlurred = false;
+        window.addEventListener('blur', () => {
+            wasBlurred = true;
+        });
+        
         window.addEventListener('focus', () => {
-            if (this.isWaitingForPurchase && this.currentUsername) {
+            if (wasBlurred && this.isWaitingForPurchase && this.currentUsername) {
                 console.log('Window focused, checking purchase status...');
                 setTimeout(() => this.checkPurchaseOnReturn(), 1000);
             }
@@ -193,20 +197,18 @@ class LicenseManager {
         if (!this.isWaitingForPurchase || !this.currentUsername) return;
 
         try {
-            // Force fresh check by adding cache-busting parameter
             const response = await this.fetchGamepassCheck(this.currentUsername, true);
 
             if (response.hasGamePass) {
                 this.stopPurchaseVerification();
-                if (response.keyIssued) {
+                if (response.keyIssued && response.key) {
                     this.updateStatus('Welcome back! Purchase detected and completed!', 'green');
                     this.displayKey(response.key);
                 } else {
-                    this.updateStatus('Purchase detected, but key was already claimed.', 'red');
-                    this.displayRetryOption(this.currentUsername);
+                    this.updateStatus('Purchase detected, but there was an issue with key generation.', 'red');
+                    this.displayRetryButton();
                 }
             } else {
-                // Still no purchase, show manual check button
                 this.showManualCheckOption();
             }
         } catch (error) {
@@ -217,7 +219,6 @@ class LicenseManager {
     showManualCheckOption() {
         const statusElement = document.getElementById('status');
 
-        // Only add the button if it doesn't exist
         if (!statusElement.querySelector('.manual-check-btn')) {
             const manualCheckContainer = document.createElement('div');
             manualCheckContainer.className = 'manual-check-container';
@@ -239,7 +240,6 @@ class LicenseManager {
     async manualPurchaseCheck() {
         if (!this.currentUsername) return;
 
-        // Remove manual check button
         const manualCheckContainer = document.querySelector('.manual-check-container');
         if (manualCheckContainer) {
             manualCheckContainer.remove();
@@ -248,21 +248,19 @@ class LicenseManager {
         this.updateStatus('Checking your purchase...', 'gray');
 
         try {
-            // Force fresh check by adding cache-busting parameter
             const response = await this.fetchGamepassCheck(this.currentUsername, true);
 
             if (response.hasGamePass) {
                 this.stopPurchaseVerification();
-                if (response.keyIssued) {
+                if (response.keyIssued && response.key) {
                     this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
                     this.displayKey(response.key);
                 } else {
-                    this.updateStatus('Purchase confirmed, but key was already claimed.', 'red');
-                    this.displayRetryOption(this.currentUsername);
+                    this.updateStatus('Purchase confirmed, but there was an issue with key generation.', 'red');
+                    this.displayRetryButton();
                 }
             } else {
                 this.updateStatus('No purchase detected yet. Make sure you\'ve completed the purchase.', 'orange');
-                // Re-show the manual check option after a delay
                 setTimeout(() => this.showManualCheckOption(), 3000);
             }
         } catch (error) {
@@ -285,7 +283,6 @@ class LicenseManager {
 
         this.updateStatus('Waiting for purchase... We\'ll automatically detect when you return!', 'gray');
 
-        // Show the manual check option immediately
         setTimeout(() => this.showManualCheckOption(), 2000);
 
         return new Promise((resolve, reject) => {
@@ -309,9 +306,8 @@ class LicenseManager {
                     this.handleValidationError(error);
                     reject(error);
                 }
-            }, 12000); // Check every 12 seconds to be more gentle on rate limiting
+            }, 12000); 
 
-            // Timeout after 5 minutes
             setTimeout(() => {
                 if (this.isWaitingForPurchase) {
                     this.stopPurchaseVerification();
@@ -334,7 +330,6 @@ class LicenseManager {
                     gamepass_id: this.product.gamepassId
                 };
 
-                // Add cache-busting parameter for fresh checks
                 if (forceRefresh) {
                     requestBody.force_refresh = true;
                 }
@@ -348,7 +343,7 @@ class LicenseManager {
                 });
 
                 if (response.status === 429) {
-                    const waitTime = Math.min(15000 * Math.pow(2, retryCount), 60000); // Exponential backoff
+                    const waitTime = Math.min(15000 * Math.pow(2, retryCount), 60000);
                     console.log(`Rate limit hit, waiting ${waitTime}ms...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     retryCount++;
@@ -426,16 +421,13 @@ class LicenseManager {
 function copyKey() {
     const keyElement = document.getElementById('key');
 
-    // Modern clipboard API
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(keyElement.value).then(() => {
             showCopySuccess();
         }).catch(() => {
-            // Fallback to older method
             fallbackCopy();
         });
     } else {
-        // Fallback for older browsers
         fallbackCopy();
     }
 
@@ -462,14 +454,12 @@ function copyKey() {
     }
 }
 
-// Global functions for onclick handlers
 let licenseManager;
 
 function validatePurchase() {
     licenseManager.validatePurchase();
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     licenseManager = new LicenseManager();
 });
