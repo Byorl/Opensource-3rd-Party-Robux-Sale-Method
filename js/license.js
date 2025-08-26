@@ -50,7 +50,6 @@ class LicenseManager {
         const container = document.getElementById('product-info');
         if (!container || !this.product) return;
 
-        // Remove loading state
         container.classList.remove('loading-state');
         
         container.innerHTML = `
@@ -64,13 +63,11 @@ class LicenseManager {
             </div>
         `;
 
-        // Show the form
         const form = document.getElementById('form');
         const purchaseForm = document.querySelector('.purchase-form');
         if (form && purchaseForm) {
             purchaseForm.classList.remove('loading-state');
             form.style.display = 'block';
-            // Remove loading placeholder
             const placeholder = purchaseForm.querySelector('.loading-placeholder');
             if (placeholder) {
                 placeholder.remove();
@@ -87,7 +84,6 @@ class LicenseManager {
             const purchaseData = JSON.parse(existingPurchase);
             const now = Date.now();
 
-            // Only show warning if there was a successful purchase (has keyIssued flag)
             if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000 && purchaseData.keyIssued) {
                 document.getElementById('username').value = username;
                 this.showExistingPurchaseWarning();
@@ -164,7 +160,6 @@ class LicenseManager {
             if (element) element.style.display = 'none';
         });
         
-        // Also hide the entire purchase form container
         const purchaseForm = document.querySelector('.purchase-form');
         if (purchaseForm) {
             purchaseForm.style.display = 'none';
