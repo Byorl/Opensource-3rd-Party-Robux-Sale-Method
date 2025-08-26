@@ -1,0 +1,22 @@
+{
+  "products": [
+    {
+      "id": "7day",
+      "name": "7 Day License",
+      "price": 1,
+      "gamepassId": "7day-gamepass-id",
+      "gamepassUrl": "https://www.roblox.com/game-pass/7day-gamepass-id",
+      "description": "Access ByorlHub for 7 days",
+      "duration": "7 days"
+    },
+    {
+      "id": "30day", 
+      "name": "30 Day License",
+      "price": 2,
+      "gamepassId": "30day-gamepass-id",
+      "gamepassUrl": "https://www.roblox.com/game-pass/30day-gamepass-id",
+      "description": "Access ByorlHub for 30 days",
+      "duration": "30 days"
+    }
+  ]
+}
