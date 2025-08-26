@@ -1,0 +1,168 @@
+"""
+Simple GitHub Key Generator
+Generates keys and adds them to existing stock automatically.
+"""
+
+import secrets
+import string
+import json
+import sys
+from datetime import datetime
+from typing import List
+from github_stock import GitHubStockManager
+
+def generate_key(product_type: str = "7day") -> str:
+    """Generate a single premium key."""
+    timestamp = datetime.now().strftime("%Y%m")
+    
+    if product_type == "7day" or product_type == "7d":
+        prefix = f"BH7D_{timestamp}"
+    elif product_type == "30day" or product_type == "30d":
+        prefix = f"BH30D_{timestamp}"
+    elif product_type == "lifetime":
+        prefix = f"BHLIFE_{timestamp}"
+    else:
+        prefix = f"BH_{product_type.upper()}_{timestamp}"
+    
+    chars = string.ascii_letters + string.digits
+    random_part = ''.join(secrets.choice(chars) for _ in range(12))
+    return f"{prefix}_{random_part}"
+
+def generate_keys(count: int, product_type: str = "7day") -> List[str]:
+    """Generate multiple unique keys."""
+    keys = set()
+    while len(keys) < count:
+        key = generate_key(product_type)
+        keys.add(key)
+    return list(keys)
+
+def load_config():
+    """Load GitHub configuration."""
+    try:
+        with open('config/products.json', 'r') as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        print(f"❌ Failed to load config: {e}")
+        sys.exit(1)
+
+def get_product_info(product_id: str, config: dict):
+    """Get product information by ID."""
+    for product in config['products']:
+        if product['id'] == product_id or product['id'].startswith(product_id):
+            return product
+    return None
+
+def show_status():
+    """Show current stock status."""
+    config = load_config()
+    github_config = config.get('github', {})
+    
+    if not github_config.get('token'):
+        print("❌ GitHub not configured")
+        return
+    
+    manager = GitHubStockManager(
+        token=github_config.get('token'),
+        repo_owner=github_config.get('repo_owner'),
+        repo_name=github_config.get('repo_name')
+    )
+    
+    print("\n📊 Current Stock Status")
+    print("=" * 40)
+    
+    for product in config['products']:
+        github_file = product.get('stockGithubFile')
+        if github_file:
+            stock_count = manager.get_stock_count(github_file)
+            print(f"📦 {product['name']}: {stock_count} keys")
+        else:
+            print(f"📦 {product['name']}: Not configured")
+    
+    print("=" * 40)
+
+def main():
+    """Main function - simplified interface."""
+    if len(sys.argv) < 2:
+        print("🔑 ByorlHub Key Generator")
+        print("=" * 30)
+        print("Usage:")
+        print("  python github_key_generator.py <count> [product]")
+        print("")
+        print("Examples:")
+        print("  python github_key_generator.py 50        # Add 50 keys to 7-day stock")
+        print("  python github_key_generator.py 25 7d     # Add 25 keys to 7-day stock")
+        print("  python github_key_generator.py 10 30d    # Add 10 keys to 30-day stock")
+        print("  python github_key_generator.py status    # Show current stock")
+        print("")
+        return
+    
+    if sys.argv[1].lower() == 'status':
+        show_status()
+        return
+    
+    try:
+        count = int(sys.argv[1])
+    except ValueError:
+        print("❌ First argument must be a number")
+        return
+    
+    product_type = sys.argv[2] if len(sys.argv) > 2 else "7day"
+    
+    if count <= 0:
+        print("❌ Count must be greater than 0")
+        return
+    
+    if count > 500:
+        print("❌ Maximum 500 keys per generation")
+        return
+    
+    config = load_config()
+    github_config = config.get('github', {})
+    
+    if not github_config.get('token'):
+        print("❌ GitHub not configured in config/products.json")
+        return
+    
+    manager = GitHubStockManager(
+        token=github_config.get('token'),
+        repo_owner=github_config.get('repo_owner'),
+        repo_name=github_config.get('repo_name')
+    )
+    
+    product = get_product_info(product_type, config)
+    if not product:
+        print(f"❌ Product '{product_type}' not found")
+        print("Available products: 7day (7d), 30day (30d)")
+        return
+    
+    github_file = product.get('stockGithubFile')
+    if not github_file:
+        print(f"❌ No GitHub file configured for {product['name']}")
+        return
+    
+    current_stock = manager.get_file_content(github_file)
+    print(f"📦 Current stock: {len(current_stock)} keys")
+    
+    print(f"🔄 Generating {count} new keys...")
+    new_keys = generate_keys(count, product_type)
+    
+    print(f"📤 Adding keys to {product['name']} stock...")
+    success = manager.add_keys_to_stock(github_file, new_keys)
+    
+    if success:
+        total_stock = len(current_stock) + count
+        print(f"✅ Success! Added {count} keys")
+        print(f"📊 Total stock: {total_stock} keys")
+        print(f"📁 File: {github_file}")
+        
+        print(f"\n🔑 Sample keys added:")
+        for i, key in enumerate(new_keys[:3], 1):
+            print(f"  {i}. {key}")
+        if len(new_keys) > 3:
+            print(f"  ... and {len(new_keys) - 3} more")
+    else:
+        print(f"❌ Failed to add keys to stock")
+
+if __name__ == "__main__":
+    main()
