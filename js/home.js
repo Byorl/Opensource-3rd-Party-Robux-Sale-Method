@@ -44,15 +44,14 @@ class ProductManager {
 
         const buttonsHtml = this.products.map(product => `
             <div class="product-item" data-product-id="${product.id}">
-                <button class="btn" onclick="redirectToLicense('${product.id}')">
-                    <span class="button-text">${product.name}</span>
-                    <span class="button-duration">${product.duration}</span>
-                </button>
+                <h3 class="product-name">${product.name}</h3>
                 <div class="price-box">
                     <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
                     <span class="price">${product.price}</span>
                 </div>
-                <p class="product-description">${product.description}</p>
+                <button class="btn" onclick="redirectToLicense('${product.id}')">
+                    Purchase License
+                </button>
             </div>
         `).join('');
 
