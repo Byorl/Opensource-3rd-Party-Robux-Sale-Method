@@ -256,8 +256,7 @@ body {
     .product-name {
         font-size: 18px;
     }
-}/* Stock
- indicator styling */
+}
 .stock-indicator {
     padding: 8px 12px;
     border-radius: 20px;
@@ -282,7 +281,6 @@ body {
     color: white;
 }
 
-/* Product item states */
 .product-item.out-of-stock {
     opacity: 0.6;
     border-color: #ddd !important;
@@ -313,7 +311,6 @@ body {
     border-color: #e17055 !important;
 }
 
-/* Stock refresh button */
 .stock-refresh {
     margin-top: 20px;
     text-align: center;
