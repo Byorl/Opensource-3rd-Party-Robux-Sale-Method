@@ -28,12 +28,24 @@ def generate_key(product_type: str = "7day") -> str:
     random_part = ''.join(secrets.choice(chars) for _ in range(12))
     return f"{prefix}_{random_part}"
 
-def generate_keys(count: int, product_type: str = "7day") -> List[str]:
-    """Generate multiple unique keys."""
+def generate_keys(count: int, product_type: str = "7day", existing_keys: set = None) -> List[str]:
+    """Generate multiple unique keys, avoiding duplicates with existing keys."""
+    if existing_keys is None:
+        existing_keys = set()
+    
     keys = set()
-    while len(keys) < count:
+    max_attempts = count * 10 
+    attempts = 0
+    
+    while len(keys) < count and attempts < max_attempts:
         key = generate_key(product_type)
-        keys.add(key)
+        if key not in existing_keys and key not in keys:
+            keys.add(key)
+        attempts += 1
+    
+    if attempts >= max_attempts:
+        print(f"[!] Warning: Could only generate {len(keys)} unique keys after {max_attempts} attempts")
+    
     return list(keys)
 
 def load_config():
@@ -43,7 +55,7 @@ def load_config():
             config = json.load(f)
         return config
     except Exception as e:
-        print(f"❌ Failed to load config: {e}")
+        print(f"[X] Failed to load config: {e}")
         sys.exit(1)
 
 def get_product_info(product_id: str, config: dict):
@@ -54,12 +66,12 @@ def get_product_info(product_id: str, config: dict):
     return None
 
 def show_status():
-    """Show current stock status."""
+    """Show current stock status with enhanced display."""
     config = load_config()
     github_config = config.get('github', {})
     
     if not github_config.get('token'):
-        print("❌ GitHub not configured")
+        print("[X] GitHub not configured")
         return
     
     manager = GitHubStockManager(
@@ -68,23 +80,41 @@ def show_status():
         repo_name=github_config.get('repo_name')
     )
     
-    print("\n📊 Current Stock Status")
-    print("=" * 40)
+    print("Current Stock Status")
+    print("=" * 50)
     
+    total_keys = 0
     for product in config['products']:
         github_file = product.get('stockGithubFile')
         if github_file:
             stock_count = manager.get_stock_count(github_file)
-            print(f"📦 {product['name']}: {stock_count} keys")
+            total_keys += stock_count
+            
+            if stock_count == 0:
+                status = "[!] OUT OF STOCK"
+            elif stock_count < 10:
+                status = "[!] LOW STOCK"
+            else:
+                status = "[+] IN STOCK"
+            
+            print(f"[*] {product['name']:<15} {stock_count:>3} keys  {status}")
         else:
-            print(f"📦 {product['name']}: Not configured")
+            print(f"[*] {product['name']:<15} --- keys  [-] NOT CONFIGURED")
     
-    print("=" * 40)
+    print("=" * 50)
+    print(f"[+] Total Keys Available: {total_keys}")
+    
+    if total_keys < 20:
+        print("[!] Recommendation: Generate more keys soon")
+    elif total_keys < 50:
+        print("[i] Recommendation: Consider generating more keys")
+    else:
+        print("[+] Stock levels look good!")
 
 def main():
     """Main function - simplified interface."""
     if len(sys.argv) < 2:
-        print("🔑 ByorlHub Key Generator")
+        print("ByorlHub Key Generator")
         print("=" * 30)
         print("Usage:")
         print("  python github_key_generator.py <count> [product]")
@@ -104,24 +134,24 @@ def main():
     try:
         count = int(sys.argv[1])
     except ValueError:
-        print("❌ First argument must be a number")
+        print("[X] First argument must be a number")
         return
     
     product_type = sys.argv[2] if len(sys.argv) > 2 else "7day"
     
     if count <= 0:
-        print("❌ Count must be greater than 0")
+        print("[X] Count must be greater than 0")
         return
     
     if count > 500:
-        print("❌ Maximum 500 keys per generation")
+        print("[X] Maximum 500 keys per generation")
         return
     
     config = load_config()
     github_config = config.get('github', {})
     
     if not github_config.get('token'):
-        print("❌ GitHub not configured in config/products.json")
+        print("[X] GitHub not configured in config/products.json")
         return
     
     manager = GitHubStockManager(
@@ -132,37 +162,68 @@ def main():
     
     product = get_product_info(product_type, config)
     if not product:
-        print(f"❌ Product '{product_type}' not found")
+        print(f"[X] Product '{product_type}' not found")
         print("Available products: 7day (7d), 30day (30d)")
         return
     
     github_file = product.get('stockGithubFile')
     if not github_file:
-        print(f"❌ No GitHub file configured for {product['name']}")
+        print(f"[X] No GitHub file configured for {product['name']}")
         return
     
     current_stock = manager.get_file_content(github_file)
-    print(f"📦 Current stock: {len(current_stock)} keys")
+    print(f"[*] Current stock: {len(current_stock)} keys")
     
-    print(f"🔄 Generating {count} new keys...")
-    new_keys = generate_keys(count, product_type)
+    print(f"[~] Checking for existing keys to prevent duplicates...")
+    stock_files = []
+    bought_files = []
     
-    print(f"📤 Adding keys to {product['name']} stock...")
+    for prod in config['products']:
+        stock_file = prod.get('stockGithubFile')
+        if stock_file:
+            stock_files.append(stock_file)
+    
+    bought_file = github_config.get('bought_file')
+    if bought_file:
+        bought_files.append(bought_file)
+    
+    existing_keys = manager.get_all_existing_keys(stock_files, bought_files)
+    print(f"[*] Found {len(existing_keys)} existing keys across all files")
+    
+    print(f"[~] Generating {count} new unique keys...")
+    new_keys = generate_keys(count, product_type, existing_keys)
+    
+    if len(new_keys) < count:
+        print(f"[!] Warning: Only generated {len(new_keys)} keys instead of {count}")
+    
+    print(f"[~] Adding keys to {product['name']} stock...")
     success = manager.add_keys_to_stock(github_file, new_keys)
     
     if success:
-        total_stock = len(current_stock) + count
-        print(f"✅ Success! Added {count} keys")
-        print(f"📊 Total stock: {total_stock} keys")
-        print(f"📁 File: {github_file}")
+        total_stock = len(current_stock) + len(new_keys)
+        print(f"[+] Success! Added {len(new_keys)} keys")
+        print(f"[*] Total stock: {total_stock} keys")
+        print(f"[*] File: {github_file}")
         
-        print(f"\n🔑 Sample keys added:")
+        duplicates_found = []
+        for key in new_keys:
+            if key in existing_keys:
+                duplicates_found.append(key)
+        
+        if duplicates_found:
+            print(f"[!] WARNING: {len(duplicates_found)} duplicate keys detected!")
+            for dup in duplicates_found[:3]:
+                print(f"  - {dup}")
+        else:
+            print(f"[+] Duplicate check passed - all keys are unique")
+        
+        print(f"\n[+] Sample keys added:")
         for i, key in enumerate(new_keys[:3], 1):
             print(f"  {i}. {key}")
         if len(new_keys) > 3:
             print(f"  ... and {len(new_keys) - 3} more")
     else:
-        print(f"❌ Failed to add keys to stock")
+        print(f"[X] Failed to add keys to stock")
 
 if __name__ == "__main__":
     main()
