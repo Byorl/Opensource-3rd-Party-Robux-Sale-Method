@@ -13,7 +13,7 @@ class LicenseManager {
     async init() {
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('product');
-        
+
         if (!productId) {
             window.location.href = 'index.html';
             return;
@@ -34,10 +34,10 @@ class LicenseManager {
                 console.warn('Server not available, loading from local file');
                 response = await fetch('config/products.json');
             }
-            
+
             const data = await response.json();
             this.product = data.products.find(p => p.id === productId);
-            
+
             if (!this.product) {
                 throw new Error('Product not found');
             }
@@ -67,11 +67,11 @@ class LicenseManager {
         const username = localStorage.getItem('lastUsername');
         const purchaseKey = `purchase_${this.product.id}_${username}`;
         const existingPurchase = localStorage.getItem(purchaseKey);
-        
+
         if (existingPurchase && username) {
             const purchaseData = JSON.parse(existingPurchase);
             const now = Date.now();
-            
+
             // Check if purchase is recent (within 24 hours)
             if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000) {
                 document.getElementById('username').value = username;
@@ -94,11 +94,11 @@ class LicenseManager {
         const key = `${username}_${this.product.id}`;
         const lastAttempt = this.rateLimitCache.get(key);
         const now = Date.now();
-        
+
         if (lastAttempt && now - lastAttempt < 30000) { // 30 second cooldown
             return true;
         }
-        
+
         this.rateLimitCache.set(key, now);
         return false;
     }
@@ -107,7 +107,7 @@ class LicenseManager {
         const key = `${username}_${this.product.id}`;
         const attempts = this.purchaseAttempts.get(key) || 0;
         this.purchaseAttempts.set(key, attempts + 1);
-        
+
         // Store in localStorage for persistence
         const purchaseKey = `purchase_${this.product.id}_${username}`;
         localStorage.setItem(purchaseKey, JSON.stringify({
@@ -193,8 +193,9 @@ class LicenseManager {
         if (!this.isWaitingForPurchase || !this.currentUsername) return;
 
         try {
-            const response = await this.fetchGamepassCheck(this.currentUsername);
-            
+            // Force fresh check by adding cache-busting parameter
+            const response = await this.fetchGamepassCheck(this.currentUsername, true);
+
             if (response.hasGamePass) {
                 this.stopPurchaseVerification();
                 if (response.keyIssued) {
@@ -215,13 +216,13 @@ class LicenseManager {
 
     showManualCheckOption() {
         const statusElement = document.getElementById('status');
-        
+
         // Only add the button if it doesn't exist
         if (!statusElement.querySelector('.manual-check-btn')) {
             const manualCheckContainer = document.createElement('div');
             manualCheckContainer.className = 'manual-check-container';
             manualCheckContainer.style.marginTop = '20px';
-            
+
             manualCheckContainer.innerHTML = `
                 <p style="color: #666; margin-bottom: 15px;">
                     🔄 Returned from purchase? Click below to check if you've bought the gamepass:
@@ -230,7 +231,7 @@ class LicenseManager {
                     I have purchased the gamepass
                 </button>
             `;
-            
+
             statusElement.appendChild(manualCheckContainer);
         }
     }
@@ -247,8 +248,9 @@ class LicenseManager {
         this.updateStatus('Checking your purchase...', 'gray');
 
         try {
-            const response = await this.fetchGamepassCheck(this.currentUsername);
-            
+            // Force fresh check by adding cache-busting parameter
+            const response = await this.fetchGamepassCheck(this.currentUsername, true);
+
             if (response.hasGamePass) {
                 this.stopPurchaseVerification();
                 if (response.keyIssued) {
@@ -280,9 +282,9 @@ class LicenseManager {
     async startPurchaseVerification(username) {
         this.isWaitingForPurchase = true;
         this.currentUsername = username;
-        
+
         this.updateStatus('Waiting for purchase... We\'ll automatically detect when you return!', 'gray');
-        
+
         // Show the manual check option immediately
         setTimeout(() => this.showManualCheckOption(), 2000);
 
@@ -321,21 +323,28 @@ class LicenseManager {
         });
     }
 
-    async fetchGamepassCheck(username) {
+    async fetchGamepassCheck(username, forceRefresh = false) {
         const maxRetries = 3;
         let retryCount = 0;
 
         while (retryCount < maxRetries) {
             try {
+                const requestBody = {
+                    username,
+                    gamepass_id: this.product.gamepassId
+                };
+
+                // Add cache-busting parameter for fresh checks
+                if (forceRefresh) {
+                    requestBody.force_refresh = true;
+                }
+
                 const response = await fetch('http://localhost:5000/check-gamepass', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        username, 
-                        gamepass_id: this.product.gamepassId 
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (response.status === 429) {
@@ -374,7 +383,7 @@ class LicenseManager {
         const retryContainer = document.createElement('div');
         retryContainer.className = 'retry-container';
         retryContainer.style.marginTop = '20px';
-        
+
         retryContainer.innerHTML = `
             <p>To get a new key, please:</p>
             <ol>
@@ -386,7 +395,7 @@ class LicenseManager {
                 I have repurchased the gamepass
             </button>
         `;
-        
+
         statusElement.appendChild(retryContainer);
     }
 
@@ -416,7 +425,7 @@ class LicenseManager {
 
 function copyKey() {
     const keyElement = document.getElementById('key');
-    
+
     // Modern clipboard API
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(keyElement.value).then(() => {
@@ -429,7 +438,7 @@ function copyKey() {
         // Fallback for older browsers
         fallbackCopy();
     }
-    
+
     function fallbackCopy() {
         keyElement.select();
         keyElement.setSelectionRange(0, 99999);
@@ -440,7 +449,7 @@ function copyKey() {
             console.error('Copy failed:', err);
         }
     }
-    
+
     function showCopySuccess() {
         const copyBtn = document.querySelector('.copy-btn');
         const originalText = copyBtn.innerText;
