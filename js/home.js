@@ -32,10 +32,21 @@ class ProductManager {
         const container = document.getElementById('products-container');
         if (!container) return;
 
+        if (this.products.length === 0) {
+            container.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading"></div>
+                    <p>Loading products...</p>
+                </div>
+            `;
+            return;
+        }
+
         const buttonsHtml = this.products.map(product => `
-            <div class="product-item">
+            <div class="product-item" data-product-id="${product.id}">
                 <button class="btn" onclick="redirectToLicense('${product.id}')">
-                    ${product.name}
+                    <span class="button-text">${product.name}</span>
+                    <span class="button-duration">${product.duration}</span>
                 </button>
                 <div class="price-box">
                     <img src="icon/Robux.svg" alt="Robux Icon" class="robux-icon">
@@ -50,6 +61,24 @@ class ProductManager {
                 ${buttonsHtml}
             </div>
         `;
+
+        // Add click animations
+        this.addProductAnimations();
+    }
+
+    addProductAnimations() {
+        const productItems = document.querySelectorAll('.product-item');
+        productItems.forEach((item, index) => {
+            // Stagger the entrance animation
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                item.style.transition = 'all 0.5s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 150);
+        });
     }
 }
 
