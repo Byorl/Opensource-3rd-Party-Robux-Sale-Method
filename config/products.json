@@ -4,27 +4,28 @@
       "id": "7day",
       "name": "7 Day License",
       "price": 1,
-      "gamepassId": "1422097881",
-      "gamepassUrl": "https://www.roblox.com/game-pass/1422097881/2x-clicks",
+      "gamepassId": "YOUR-7DAY-GAMEPASS-ID",
+      "gamepassUrl": "YOUR-7DAY-GAMEPASS-URL",
       "description": "Access ByorlHub for 7 days",
       "duration": "7 days",
-      "stockPastebinUrl": "YOUR_PASTEBIN_7DAYSKEY_HERE"
+      "stockGithubFile": "YOUR-7DAY-STOCK-FILE-NAME"
     },
     {
-      "id": "30day", 
+      "id": "30day",
       "name": "30 Day License",
       "price": 2,
-      "gamepassId": "30day-gamepass-id",
-      "gamepassUrl": "https://www.roblox.com/game-pass/30day-gamepass-id",
+      "gamepassId": "YOUR-30DAY-GAMEPASS-ID",
+      "gamepassUrl": "YOUR-30DAY-GAMEPASS-URL",
       "description": "Access ByorlHub for 30 days",
       "duration": "30 days",
-      "stockPastebinUrl": "https://pastebin.com/raw/30day-stock-id"
+      "stockGithubFile": "YOUR-30DAY-STOCK-FILE-NAME"
     }
   ],
-  "pastebin": {
-    "boughtKeysUrl": "YOUR_PASTEBIN_KEYSBOUGHT_URL_HERE",
-    "apiKey": "YOUR_PASTEBIN_API_KEY_HERE",
-    "username": "YOUR_PASTEBIN_USERNAME_HERE",
-    "password": "YOUR_PASTEBIN_PASSWORD_HERE"
+  "github": {
+    "token": "YOUR_GITHUB_TOKEN",
+    "repo_owner": "YOUR_GITHUB_USERNAME",
+    "repo_name": "YOUR_REPO_NAME",
+    "stock_file": "YOUR-7DAYSTOCK-FILE-NAME",
+    "bought_file": "YOUR-KEYSBOUGHT-FILE-NAME"
   }
 }
