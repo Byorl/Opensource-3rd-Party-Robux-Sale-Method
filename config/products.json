@@ -8,7 +8,7 @@
       "gamepassUrl": "https://www.roblox.com/game-pass/1422097881/2x-clicks",
       "description": "Access ByorlHub for 7 days",
       "duration": "7 days",
-      "stockPastebinUrl": "https://pastebin.com/raw/D7WXrRkY"
+      "stockPastebinUrl": "YOUR_PASTEBIN_7DAYSKEY_HERE"
     },
     {
       "id": "30day", 
@@ -22,9 +22,9 @@
     }
   ],
   "pastebin": {
-    "boughtKeysUrl": "https://pastebin.com/raw/XbkvuWxx",
+    "boughtKeysUrl": "YOUR_PASTEBIN_KEYSBOUGHT_URL_HERE",
     "apiKey": "YOUR_PASTEBIN_API_KEY_HERE",
-    "username": "Byorl",
-    "password": "Sebastianbyorl08+"
+    "username": "YOUR_PASTEBIN_USERNAME_HERE",
+    "password": "YOUR_PASTEBIN_PASSWORD_HERE"
   }
 }
