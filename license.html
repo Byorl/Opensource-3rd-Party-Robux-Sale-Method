@@ -3,30 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase ByorlHub License</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>ByorlHub - Purchase License</title>
+    <link rel="stylesheet" href="css/unified.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div id="product-info">
-            <!-- Product info will be loaded dynamically -->
-        </div>
-        
-        <form id="form">
-            <label id="usernameLabel" for="username">Roblox Username</label>
-            <input type="text" id="username" placeholder="Enter your Roblox username..." required>
-            <br>
-            <button class="btn" id="continueButton" type="button" onclick="validatePurchase()">Continue</button>
-        </form>
-        
-        <div id="status"></div>
-        <div id="keyContainer" style="display:none;"> 
-            <input type="text" id="key" readonly />
-            <button class="btn copy-btn" onclick="copyKey()">Copy Key</button>
-        </div>
-        
-        <div class="back-link">
-            <a href="index.html">← Back to License Selection</a>
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo">
+                    <div class="logo-icon">🚀</div>
+                    <h1>ByorlHub</h1>
+                </div>
+                <div class="back-nav">
+                    <a href="index.html" class="back-btn">← Back to Plans</a>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div id="product-info" class="product-info-card">
+                    <!-- Product info will be loaded dynamically -->
+                </div>
+                
+                <div class="purchase-form">
+                    <form id="form">
+                        <div class="form-group">
+                            <label id="usernameLabel" for="username">Roblox Username</label>
+                            <input type="text" id="username" placeholder="Enter your Roblox username..." required>
+                        </div>
+                        <button class="btn primary-btn" id="continueButton" type="button" onclick="validatePurchase()">
+                            <span class="btn-text">Continue to Purchase</span>
+                            <span class="btn-icon">→</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div id="status" class="status-container"></div>
+                
+                <div id="keyContainer" class="key-container" style="display:none;"> 
+                    <div class="key-display">
+                        <label for="key">Your License Key</label>
+                        <input type="text" id="key" readonly />
+                        <button class="btn success-btn copy-btn" onclick="copyKey()">
+                            <span class="btn-text">Copy Key</span>
+                            <span class="btn-icon">📋</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
