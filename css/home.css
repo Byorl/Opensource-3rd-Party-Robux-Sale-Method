@@ -219,4 +219,68 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}/* 
+Enhanced button styling */
+.product-item button .button-text {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.product-item button .button-duration {
+    display: block;
+    font-size: 14px;
+    font-weight: 300;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 40px 20px;
+    color: #667eea;
+}
+
+.loading-container p {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #666;
+}
+
+/* Entrance animations */
+.product-item {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* Improved hover effects */
+.product-item:hover {
+    border-color: #667eea;
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.25);
+}
+
+/* Add a subtle glow effect */
+.product-item button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+/* Better spacing for mobile */
+@media (max-width: 600px) {
+    .products-grid {
+        gap: 15px;
+    }
+    
+    .product-item {
+        padding: 20px;
+    }
+    
+    .product-item button .button-text {
+        font-size: 16px;
+    }
+    
+    .product-item button .button-duration {
+        font-size: 12px;
+    }
 }
