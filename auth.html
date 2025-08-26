@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByorlHub - Account</title>
+    <link rel="stylesheet" href="css/unified.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            margin-bottom: var(--space-6);
+            border-radius: var(--radius-lg);
+            background: var(--bg-elevated);
+            padding: var(--space-1);
+        }
+        
+        .auth-tab {
+            flex: 1;
+            padding: var(--space-3);
+            text-align: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .auth-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .auth-tab:not(.active) {
+            color: var(--text-secondary);
+        }
+        
+        .auth-tab:not(.active):hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .auth-form {
+            display: none;
+        }
+        
+        .auth-form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: var(--space-3);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: var(--space-1);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+            font-size: 0.875rem;
+        }
+        
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="logo">
+                    <div class="logo-icon">👤</div>
+                    <h1>Account</h1>
+                </div>
+                <div class="back-nav">
+                    <a href="index.html" class="back-btn">← Back to Store</a>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div class="auth-container">
+                    <div class="auth-tabs">
+                        <div class="auth-tab active" onclick="switchTab('login')">Login</div>
+                        <div class="auth-tab" onclick="switchTab('register')">Register</div>
+                    </div>
+                    
+                    <div id="message-container"></div>
+                    
+                    <!-- Login Form -->
+                    <div id="login-form" class="auth-form active">
+                        <form onsubmit="handleLogin(event)">
+                            <div class="form-group">
+                                <label for="login-username">Username</label>
+                                <input type="text" id="login-username" placeholder="Enter your username" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="login-password">Password</label>
+                                <input type="password" id="login-password" placeholder="Enter your password" required>
+                            </div>
+                            
+                            <button type="submit" class="btn primary-btn" id="login-btn">
+                                <span class="btn-text">Login</span>
+                                <span class="btn-icon">→</span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Register Form -->
+                    <div id="register-form" class="auth-form">
+                        <form onsubmit="handleRegister(event)">
+                            <div class="form-group">
+                                <label for="register-username">Username</label>
+                                <input type="text" id="register-username" placeholder="Choose a username" required>
+                                <small>At least 3 characters, letters, numbers, _ and - only</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-password">Password</label>
+                                <input type="password" id="register-password" placeholder="Choose a password" required>
+                                <small>At least 6 characters</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="register-roblox">Roblox Username (Optional)</label>
+                                <input type="text" id="register-roblox" placeholder="Your Roblox username">
+                                <small>This will be pre-filled when making purchases</small>
+                            </div>
+                            
+                            <button type="submit" class="btn primary-btn" id="register-btn">
+                                <span class="btn-text">Create Account</span>
+                                <span class="btn-icon">→</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById(`${tab}-form`).classList.add('active');
+            
+            document.getElementById('message-container').innerHTML = '';
+        }
+        
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="${type}-message">${message}</div>`;
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
+            
+            btn.disabled = true;
+            btn.querySelector('.btn-text').textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                    if (data.auth_token) {
+                        localStorage.setItem('auth_token', data.auth_token);
+                    }
+                    setTimeout(() => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const returnUrl = urlParams.get('return');
+                        
+                        if (returnUrl) {
+                            window.location.href = decodeURIComponent(returnUrl);
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }, 1500);
+                } else {
+                    showMessage(data.error || 'Login failed');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').textContent = 'Login';
+            }
+        }
+        
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const robloxUsername = document.getElementById('register-roblox').value;
+            const btn = document.getElementById('register-btn');
+            
+            btn.disabled = true;
+            btn.querySelector('.btn-text').textContent = 'Creating Account...';
+            
+            try {
+                const response = await fetch('http://localhost:5000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        username, 
+                        password, 
+                        roblox_username: robloxUsername 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('Account created successfully! You can now login.', 'success');
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('login-username').value = username;
+                    }, 1500);
+                } else {
+                    showMessage(data.error || 'Registration failed');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('.btn-text').textContent = 'Create Account';
+            }
+        }
+    </script>
+</body>
+</html>
