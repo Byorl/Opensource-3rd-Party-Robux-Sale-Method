@@ -4,10 +4,11 @@
       "id": "7day",
       "name": "7 Day License",
       "price": 1,
-      "gamepassId": "7day-gamepass-id",
-      "gamepassUrl": "https://www.roblox.com/game-pass/7day-gamepass-id",
+      "gamepassId": "1422097881",
+      "gamepassUrl": "https://www.roblox.com/game-pass/1422097881/2x-clicks",
       "description": "Access ByorlHub for 7 days",
-      "duration": "7 days"
+      "duration": "7 days",
+      "stockPastebinUrl": "https://pastebin.com/raw/D7WXrRkY"
     },
     {
       "id": "30day", 
@@ -16,7 +17,14 @@
       "gamepassId": "30day-gamepass-id",
       "gamepassUrl": "https://www.roblox.com/game-pass/30day-gamepass-id",
       "description": "Access ByorlHub for 30 days",
-      "duration": "30 days"
+      "duration": "30 days",
+      "stockPastebinUrl": "https://pastebin.com/raw/30day-stock-id"
     }
-  ]
+  ],
+  "pastebin": {
+    "boughtKeysUrl": "https://pastebin.com/raw/XbkvuWxx",
+    "apiKey": "YOUR_PASTEBIN_API_KEY_HERE",
+    "username": "Byorl",
+    "password": "Sebastianbyorl08+"
+  }
 }
