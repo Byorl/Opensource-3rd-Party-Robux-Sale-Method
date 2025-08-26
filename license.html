@@ -3,59 +3,590 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByorlHub - Purchase License</title>
-    <link rel="stylesheet" href="css/unified.css">
+    <title>ByorlHub - Complete Purchase</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(15, 15, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .logo:hover {
+            opacity: 0.8;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+        }
+
+        .breadcrumb a {
+            color: #a1a1aa;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb a:hover {
+            color: #6366f1;
+        }
+
+        .breadcrumb-separator {
+            width: 15px;
+            height: 15px;
+            color: #71717a;
+        }
+
+        .breadcrumb-current {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .back-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #6366f1;
+        }
+
+        .auth-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username-display {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .history-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .history-link:hover {
+            color: #6366f1;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .purchase-container {
+            max-width: 600px;
+            margin: 1.5rem auto;
+            padding: 1.5rem;
+        }
+
+        .purchase-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .purchase-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .purchase-header p {
+            color: #a1a1aa;
+            font-size: 1rem;
+        }
+
+        .product-showcase {
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0;
+            margin-bottom: 0;
+            position: relative;
+            overflow: hidden;
+            display: block;
+        }
+
+        .product-showcase::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+
+        .showcase-content {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .product-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            flex-shrink: 0;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.25rem;
+        }
+
+        .product-plan {
+            color: #6366f1;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .product-duration {
+            color: #a1a1aa;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .price-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0;
+        }
+
+        .price-value {
+            color: #6366f1;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .price-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .robux-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+
+        .purchase-section {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .purchase-form {
+            max-width: 100%;
+        }
+
+        .form-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            color: #a1a1aa;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #666;
+        }
+
+        .username-hint {
+            margin-top: 0.5rem;
+            color: #22c55e;
+            font-size: 0.85rem;
+        }
+
+        .purchase-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .status-container {
+            margin: 2rem 0;
+        }
+
+        .status-message {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+        }
+
+        .status-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #3b82f6;
+        }
+
+        .key-result {
+            background: rgba(15, 15, 25, 0.8);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 2.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .key-result::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .key-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 1rem;
+        }
+
+        .key-display {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #16a34a;
+            transform: translateY(-1px);
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 3rem;
+            color: #a1a1aa;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .purchase-container {
+                padding: 1rem;
+            }
+            
+            .purchase-header h1 {
+                font-size: 2rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        <div class="container">
-            <div class="header">
-                <div class="logo">
-                    <div class="logo-icon">🚀</div>
-                    <h1>ByorlHub</h1>
-                </div>
-                <div class="back-nav">
-                    <a href="index.html" class="back-btn">← Back to Plans</a>
-                </div>
-            </div>
-            
-            <div class="content">
-                <div id="product-info" class="product-info-card">
-                    <!-- Product info will be loaded dynamically -->
-                </div>
-                
-                <div class="purchase-form">
-                    <form id="form">
-                        <div class="form-group">
-                            <label id="usernameLabel" for="username">Roblox Username</label>
-                            <input type="text" id="username" placeholder="Enter your Roblox username..." required>
-                        </div>
-                        <button class="btn primary-btn" id="continueButton" type="button" onclick="validatePurchase()">
-                            <span class="btn-text">Continue to Purchase</span>
-                            <span class="btn-icon">→</span>
-                        </button>
-                    </form>
-                </div>
-                
-                <div id="status" class="status-container"></div>
-                
-                <div id="keyContainer" class="key-container" style="display:none;"> 
-                    <div class="key-display">
-                        <label for="key">Your License Key</label>
-                        <input type="text" id="key" readonly />
-                        <button class="btn success-btn copy-btn" onclick="copyKey()">
-                            <span class="btn-text">Copy Key</span>
-                            <span class="btn-icon">📋</span>
-                        </button>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">
+                        <img src="icon/logo.svg" alt="Logo">
                     </div>
+                    <span>ByorlHub</span>
+                </a>
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a>
+                    <svg class="breadcrumb-separator" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.10876 14L9.46582 1H10.8178L5.46074 14H4.10876Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="#" id="product-breadcrumb-link">Product</a>
+                    <svg class="breadcrumb-separator" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.10876 14L9.46582 1H10.8178L5.46074 14H4.10876Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="breadcrumb-current">Purchase</span>
                 </div>
             </div>
+            <div class="nav-links">
+                <a href="#" id="back-link" class="back-link">← Back to Product</a>
+                <div id="user-info" style="display: none;" class="user-info">
+                    <span id="username-display" class="username-display"></span>
+                    <a href="history.html" class="history-link">Purchase History</a>
+                    <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
+                <div id="auth-section">
+                    <a href="#" id="login-btn" class="auth-btn">Login</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="purchase-container">
+        <div class="purchase-header">
+            <h1>Complete Purchase</h1>
+            <p>Get instant access to premium features</p>
+        </div>
+
+        <div id="product-showcase" class="product-showcase">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading product information...</p>
+            </div>
+        </div>
+
+        <div id="status" class="status-container"></div>
+
+        <div id="keyContainer" class="key-result" style="display:none;">
+            <div class="key-title">🎉 Purchase Successful!</div>
+            <div class="key-display" id="key-display"></div>
+            <button class="copy-btn" onclick="copyKey()">
+                Copy License Key
+            </button>
         </div>
     </div>
 
     <script src="js/license.js"></script>
+    <script>
+        function copyKey() {
+            const keyElement = document.getElementById('key-display');
+            const key = keyElement.textContent;
+            
+            navigator.clipboard.writeText(key).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#16a34a';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#22c55e';
+                }, 2000);
+            }).catch(() => {
+                alert('Failed to copy key');
+            });
+        }
+    </script>
 </body>
 </html>
