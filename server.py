@@ -125,18 +125,21 @@ def fetch_user_id(username):
         logger.error(f"User fetch error: {e}")
         return None, str(e)
 
-def check_gamepass_ownership(user_id, gamepass_id):
+def check_gamepass_ownership(user_id, gamepass_id, force_refresh=False):
     """Check if a user owns a specific GamePass with caching and improved rate limiting."""
     cache_key = f"gamepass_{user_id}_{gamepass_id}"
     
-    # Check cache first (shorter cache for gamepass ownership)
-    cached_result = get_cached_response(cache_key, 30)  # Cache for 30 seconds
-    if cached_result:
-        return cached_result
+    # Skip cache if force refresh is requested
+    if not force_refresh:
+        # Check cache first (shorter cache for gamepass ownership)
+        cached_result = get_cached_response(cache_key, 10)  # Reduced to 10 seconds
+        if cached_result:
+            return cached_result
     
-    # Check rate limiting
+    # Check rate limiting (more lenient for force refresh)
     rate_key = f"gamepass_check_{user_id}_{gamepass_id}"
-    if is_rate_limited(rate_key, 10):  # 10 second rate limit per user/gamepass combo
+    rate_limit_seconds = 5 if force_refresh else 10
+    if is_rate_limited(rate_key, rate_limit_seconds):
         return None, "RATE_LIMITED"
     
     url = f'https://inventory.roblox.com/v1/users/{user_id}/items/GamePass/{gamepass_id}'
@@ -151,6 +154,8 @@ def check_gamepass_ownership(user_id, gamepass_id):
         response.raise_for_status()
         data = response.json()
         result = bool(data.get('data')), None
+        
+        # Always cache the result, even for force refresh
         cache_response(cache_key, result)
         return result
 
@@ -200,6 +205,7 @@ def check_gamepass():
         data = request.get_json()
         username = data.get('username')
         gamepass_id = data.get('gamepass_id')
+        force_refresh = data.get('force_refresh', False)
 
         if not username or not gamepass_id:
             return jsonify({'error': 'Username and gamepass_id are required'}), 400
@@ -236,7 +242,7 @@ def check_gamepass():
                 'gamepassLink': f"https://www.roblox.com/game-pass/{gamepass_id}"
             }), 500
 
-        has_gamepass, gamepass_error = check_gamepass_ownership(user_id, gamepass_id)
+        has_gamepass, gamepass_error = check_gamepass_ownership(user_id, gamepass_id, force_refresh)
         
         if gamepass_error == "RATE_LIMITED":
             return jsonify({
@@ -262,9 +268,11 @@ def check_gamepass():
         gamepass_link = product.get('gamepassUrl', f"https://www.roblox.com/game-pass/{gamepass_id}")
 
         if not has_gamepass:
-            # Update user data to reflect they don't own the gamepass
+            # IMPORTANT: Reset the key redemption status when gamepass is not owned
+            # This handles the case where someone removes and repurchases the gamepass
             user_data[username][gamepass_id] = False
             save_user_data(user_data)
+            logger.info(f"Reset key status for {username} - {product['name']} (gamepass not owned)")
             return jsonify({
                 'hasGamePass': False,
                 'keyIssued': False,
