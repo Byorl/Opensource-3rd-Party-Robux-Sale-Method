@@ -44,7 +44,7 @@
   "admin": { "username": "(optional reference)" },
   "website": { "name": "Your Store Name" },
   "settings": {
-    "adminPanelRoute": "CHANGE_ME_RANDOM_ROUTE",
+    "adminPanelRoute": "UdDWCvNNrGAL7FPTOJgvcLxUJhOE4JVt",
     "sse": { "sleepDefault": 3, "sleepBurst": 1 },
     "warmCacheUsers": [],
     "cache": { "productsMaxAge": 5 },
