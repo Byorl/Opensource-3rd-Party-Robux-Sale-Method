@@ -148,16 +148,8 @@
             font-weight: 500;
         }
 
-        .history-link {
-            color: #a1a1aa;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-
-        .history-link:hover {
-            color: #6366f1;
-        }
+        .history-link { text-decoration:none; font-size:0.8rem; font-weight:500; padding:0.5rem 1rem; border-radius:8px; background:rgba(99,102,241,0.12); color:#6366f1; border:1px solid rgba(99,102,241,0.3); transition:.2s; }
+        .history-link:hover { background:rgba(99,102,241,0.2); color:#ffffff; border-color:rgba(99,102,241,0.5); }
 
         .logout-btn {
             background: rgba(239, 68, 68, 0.1);
@@ -382,7 +374,9 @@
         }
 
         .status-container {
-            margin: 2rem 0;
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
         }
 
         .status-message {
@@ -390,6 +384,10 @@
             border-radius: 8px;
             text-align: center;
             font-weight: 500;
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         .status-success {
@@ -492,18 +490,84 @@
             100% { transform: rotate(360deg); }
         }
 
-        @media (max-width: 768px) {
-            .purchase-container {
-                padding: 1rem;
-            }
-            
-            .purchase-header h1 {
-                font-size: 2rem;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
+        .product-showcase .status-container {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .product-showcase .key-result {
+            margin: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .product-showcase .manual-check-container {
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .product-showcase .repurchase-needed {
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .product-showcase .retry-container {
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .product-showcase .purchase-redirect-container {
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .product-showcase .pending-purchase-notice {
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            max-width: 400px;
+            margin: 0 auto;
+            background: #fff3cd !important;
+            border: 1px solid #ffeaa7 !important;
+            color: #856404 !important;
         }
     </style>
 </head>
@@ -525,6 +589,23 @@
                     <a href="#" id="product-breadcrumb-link">Product</a>
                     <svg class="breadcrumb-separator" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4.10876 14L9.46582 1H10.8178L5.46074 14H4.10876Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+                    <style>
+                        .status-container { margin-top:24px; }
+                        .actions-grid { max-width:520px; margin:0 auto; }
+                        .action-card { background:#1f2333; border:1px solid #2c3244; padding:18px 20px; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+                        .action-card button { width:100%; }
+                        .status-messages { margin-top:18px; }
+                        .status-message { padding:12px 14px; border-radius:10px; font-size:0.9rem; line-height:1.3; background:#1d2533; border:1px solid #2a3444; color:#e2e8f0; }
+                        .status-success { background:#0f3d27; border-color:#1b5e37; color:#d1fae5; }
+                        .status-error { background:#451a1a; border-color:#6b1f1f; color:#fecaca; }
+                        .status-warning { background:#423016; border-color:#704b1c; color:#fde68a; }
+                        .status-info { background:#1e3553; border-color:#254666; color:#bfdbfe; }
+                        .actions-grid .action-card + .action-card { margin-top:0; }
+                        @media (min-width:700px){
+                            .actions-grid { flex-direction:row; gap:22px; }
+                            .actions-grid .action-card { flex:1; }
+                        }
+                    </style>
                     </svg>
                     <span class="breadcrumb-current">Purchase</span>
                 </div>
@@ -554,16 +635,16 @@
                 <div class="loading-spinner"></div>
                 <p>Loading product information...</p>
             </div>
-        </div>
 
-        <div id="status" class="status-container"></div>
+            <div id="status" class="status-container" style="display: none;"></div>
 
-        <div id="keyContainer" class="key-result" style="display:none;">
-            <div class="key-title">🎉 Purchase Successful!</div>
-            <div class="key-display" id="key-display"></div>
-            <button class="copy-btn" onclick="copyKey()">
-                Copy License Key
-            </button>
+            <div id="keyContainer" class="key-result" style="display:none;">
+                <div class="key-title">🎉 Purchase Successful!</div>
+                <div class="key-display" id="key-display"></div>
+                <button class="copy-btn" onclick="copyKey()">
+                    Copy License Key
+                </button>
+            </div>
         </div>
     </div>
 
@@ -588,5 +669,17 @@
             });
         }
     </script>
+        <script>
+            (async function(){
+                try{
+                    const res = await fetch('config/products.json');
+                    const cfg = await res.json();
+                    const mainName = (cfg.website && cfg.website.name) || (cfg.mainProducts && cfg.mainProducts[0] && cfg.mainProducts[0].name) || cfg.site_name;
+                    document.title = `${mainName} - Complete Purchase`;
+                    const logoSpans = document.querySelectorAll('.logo span');
+                    logoSpans.forEach(s => s.textContent = mainName);
+                }catch(e){}
+            })();
+        </script>
 </body>
 </html>
