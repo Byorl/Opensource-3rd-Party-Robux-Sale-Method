@@ -170,11 +170,4 @@ or
 ```
 
 ---
-## 13. Next Ideas (Optional)
-* Discord webhook on sale
-* Rate limiting
-* Expiration enforcement / auto-disable
-* Docker deploy
-
----
 License: MIT. Use responsibly.
