@@ -1,49 +1,64 @@
 {
   "mainProducts": [
     {
-      "id": "product-id-1",
-      "name": "PRODUCT_1",
-      "description": "Premium Roblox executor with advanced features, regular updates, and 24/7 support. Get access to the most powerful scripting tools available.",
-      "mainImage": "https://avatars.githubusercontent.com/u/59534560?v=4&size=64",
+      "id": "your-main-product-id",
+      "name": "Your Product Name",
+      "description": "Short marketing description shown on homepage.",
+      "mainImage": "https://your.cdn.example.com/product/icon.png",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeKOOpLy92UjzQxq8NCxgxOQJbj_YVdfHO_g&s",
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4aBhloyMLx5qA6G6wSEi0s9AvDu1r7utrbQ&s",
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHsHjqVgmo-RyH-pXfZp3_HERNuAE6GLVN3w&s"
+        "https://your.cdn.example.com/product/screenshot1.png",
+        "https://your.cdn.example.com/product/screenshot2.png"
       ],
-      "variants": [
-        "7day",
-        "30day"
-      ]
+      "variants": ["7day", "30day"]
     }
   ],
   "products": [
     {
-      "id": "7day",
-      "name": "YOUR_PROJECT_NAME 7D",
-      "price": 1,
-      "gamepassId": "YOUR_GAMEPASS_ID",
-      "gamepassUrl": "YOUR_GAMEPASS_URL",
-      "description": "Access YOUR_PROJECT_NAME for 7 days",
+      "id": "prod7day",
+      "name": "Your Product 7D",
+      "price": 5,
+      "gamepassId": "ROBLOX_GAMEPASS_ID_7DAY",
+      "gamepassUrl": "https://www.roblox.com/game-pass/ROBLOX_GAMEPASS_ID_7DAY/whatever",
+      "description": "Access for 7 days",
       "duration": "7 days",
-      "stockGithubFile": "7-Day Stock",
-      "parentProduct": "PRODUCT_PARENT_NAME-hub"
+      "stockGithubFile": "Your Product 7-Day Stock",
+      "parentProduct": "your-main-product-id"
     },
     {
-      "id": "30day",
-      "name": "YOUR_PROJECT_NAME 30D",
-      "price": 1,
-      "gamepassId": "YOUR_GAMEPASS_ID",
-      "gamepassUrl": "YOUR_GAMEPASS_URL",
-      "description": "Access YOUR_PROJECT_NAME for 30 days",
+      "id": "prod30day",
+      "name": "Your Product 30D",
+      "price": 10,
+      "gamepassId": "ROBLOX_GAMEPASS_ID_30DAY",
+      "gamepassUrl": "https://www.roblox.com/game-pass/ROBLOX_GAMEPASS_ID_30DAY/whatever",
+      "description": "Access for 30 days",
       "duration": "30 days",
-      "stockGithubFile": "30-Day Stock",
-      "parentProduct": "PRODUCT_PARENT_NAME"
+      "stockGithubFile": "Your Product 30-Day Stock",
+      "parentProduct": "your-main-product-id"
     }
   ],
   "github": {
-    "token": "YOUR_GITHUB_TOKEN",
-    "repo_owner": "YOUR_GITHUB_USERNAME",
-    "repo_name": "YOURPROJECT_Keys",
+    "repo_owner": "YOUR_GITHUB_USERNAME_HERE",
+    "repo_name": "YOUR_STOCK_REPO_NAME_HERE",
     "bought_file": "Keys Bought"
+  },
+  "admin": { "username": "(optional reference)" },
+  "website": { "name": "Your Store Name" },
+  "settings": {
+    "adminPanelRoute": "CHANGE_ME_RANDOM_ROUTE",
+    "sse": { "sleepDefault": 3, "sleepBurst": 1 },
+    "warmCacheUsers": [],
+    "cache": { "productsMaxAge": 5 },
+    "roblox": {
+      "transactionsLimit": 25,
+      "claimWindowHours": 12,
+      "claimedFile": "ClaimedTransactions",
+      "useOwnershipFastPath": false,
+      "enforcePendingStart": false,
+      "preferSalesAPI": true,
+      "extremeDebug": false,
+      "quickPollAttempts": 4,
+      "quickPollIntervalMs": 600,
+      "allowLooseSaleMatch": true
+    }
   }
 }
