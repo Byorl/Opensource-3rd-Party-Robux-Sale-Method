@@ -298,4 +298,16 @@
         }
     </script>
 </body>
+    <script>
+        (async function(){
+            try{
+                const res = await fetch('config/products.json');
+                const cfg = await res.json();
+                const mainName = (cfg.website && cfg.website.name) || (cfg.mainProducts && cfg.mainProducts[0] && cfg.mainProducts[0].name) || cfg.site_name;
+                document.title = `${mainName} - Account`;
+                const logoSpans = document.querySelectorAll('.logo span');
+                logoSpans.forEach(s => s.textContent = mainName);
+            }catch(e){}
+        })();
+    </script>
 </html>
