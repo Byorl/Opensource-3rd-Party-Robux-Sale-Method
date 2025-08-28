@@ -534,11 +534,8 @@ class LicenseManager {
                 });
 
                 if (response.status === 429) {
-                    const waitTime = Math.min(3000 * Math.pow(2, retryCount), 15000);
-                    console.log(`Rate limit hit, waiting ${waitTime}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                    retryCount++;
-                    continue;
+                    const body = await response.json().catch(()=>({}));
+                    return body;
                 }
 
                 if (!response.ok) {
@@ -786,6 +783,10 @@ class LicenseManager {
 
     _handleManualCheckResponse(username, response){
         if (!response) return;
+        if (response.rate_limited || response.status === 'Rate Limited') {
+            this.updateStatus('Rate limited by Roblox or server. Please wait 5-10 seconds then press "I Have Purchased The Gamepass" again.', 'orange');
+            return;
+        }
         if (!response.hasGamepass) {
             if (response.hadPreviousKeys) {
                 this.showRepurchaseNeeded(response.priorKeyCount || 0);
