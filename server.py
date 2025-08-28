@@ -969,6 +969,19 @@ def parse_ts(ts: str):
             dt = dt.replace(tzinfo=None)
     return dt
 
+def ensure_naive_utc(dt: datetime):
+    """Return a naive UTC datetime for comparison safety.
+    Accepts aware (UTC or offset) or naive (assumed UTC) and returns naive UTC.
+    """
+    if not dt:
+        return None
+    if dt.tzinfo:
+        try:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except Exception:
+            return dt.replace(tzinfo=None)
+    return dt
+
 user_locks = {}
 lock_manager_lock = threading.Lock()
 rate_limit_cache = {}
@@ -1970,8 +1983,9 @@ def check_gamepass():
                 return jsonify({'hasGamepass': False, 'needStart': True, 'message': 'Start a purchase first.'})
             else:
                 pending_info = {'started_at': utc_now_iso(), 'guest': True}
-        pending_started_dt = parse_ts(pending_info.get('started_at'))
-        if authenticated_user and pending_started_dt and (datetime.now(timezone.utc).replace(tzinfo=None) - pending_started_dt).total_seconds() > PENDING_PURCHASE_EXPIRY_SECONDS:
+        pending_started_dt = ensure_naive_utc(parse_ts(pending_info.get('started_at')))
+        now_naive = ensure_naive_utc(datetime.now(timezone.utc))
+        if authenticated_user and pending_started_dt and (now_naive - pending_started_dt).total_seconds() > PENDING_PURCHASE_EXPIRY_SECONDS:
             try:
                 account_manager.pop_pending_purchase(authenticated_user['user_id'], username, product_id)
             except Exception:
@@ -2122,8 +2136,8 @@ def check_gamepass():
             enforce_pending = SETTINGS.get('roblox', {}).get('enforcePendingStart', False)
             if enforce_pending and pending_started_dt:
                 try:
-                    _tx_dt_pending = datetime.fromisoformat(tx_created_raw.replace('Z',''))
-                    if _tx_dt_pending <= pending_started_dt - timedelta(seconds=300):
+                    _tx_dt_pending = ensure_naive_utc(datetime.fromisoformat(tx_created_raw.replace('Z','')))
+                    if pending_started_dt and _tx_dt_pending <= pending_started_dt - timedelta(seconds=300):
                         logger.info(f"Skip tx {tx_id} due to enforcePendingStart gating")
                         continue
                 except Exception:
