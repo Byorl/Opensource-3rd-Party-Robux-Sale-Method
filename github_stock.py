@@ -6,8 +6,13 @@ Manages license keys using GitHub private repository instead of Pastebin.
 import requests
 import json
 import base64
+import os
 from typing import List, Optional, Dict
 import logging
+from dotenv import load_dotenv
+import urllib.parse
+
+load_dotenv('config/.env')
 
 logger = logging.getLogger(__name__)
 
@@ -21,17 +26,22 @@ class GitHubStockManager:
         self.headers = {
             "Authorization": f"token {token}",
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "ByorlHub-Stock-Manager"
+            "User-Agent": "Stock-Manager"
         }
     
     def get_file_content(self, file_path: str) -> List[str]:
         """Get current stock from GitHub file."""
         try:
-            url = f"{self.base_url}/contents/{file_path}"
+            path_encoded = urllib.parse.quote(file_path, safe='/')
+            url = f"{self.base_url}/contents/{path_encoded}"
             response = requests.get(url, headers=self.headers, timeout=10)
             
             if response.status_code == 404:
-                logger.info(f"File {file_path} not found, returning empty stock")
+                logger.info(f"File {file_path} not found (404). API URL tried: {url}")
+                try:
+                    logger.debug(f"GitHub response body: {response.text}")
+                except Exception:
+                    pass
                 return []
             
             response.raise_for_status()
@@ -52,23 +62,53 @@ class GitHubStockManager:
                 return [line.strip() for line in content.split('\n') if line.strip()]
                 
         except Exception as e:
-            logger.error(f"Failed to fetch stock from GitHub {file_path}: {e}")
+            try:
+                logger.error(f"Failed to fetch stock from GitHub {file_path}. API URL tried: {url} Error: {e}")
+            except Exception:
+                logger.error(f"Failed to fetch stock from GitHub {file_path}. Error: {e}")
             return []
     
     def update_file_content(self, file_path: str, keys: List[str], commit_message: str = None) -> bool:
         """Update GitHub file with new stock."""
         try:
-            url = f"{self.base_url}/contents/{file_path}"
+            path_encoded = urllib.parse.quote(file_path, safe='/')
+            url = f"{self.base_url}/contents/{path_encoded}"
             response = requests.get(url, headers=self.headers, timeout=10)
             
             sha = None
+            existing_format = 'json'  # or 'lines'
             if response.status_code == 200:
                 file_data = response.json()
                 sha = file_data['sha']
+                try:
+                    existing_raw = base64.b64decode(file_data.get('content','')).decode('utf-8').lstrip()
+                    # Heuristic: if file begins with '[' treat as JSON list, else newline separated.
+                    if existing_raw.startswith('['):
+                        existing_format = 'json'
+                    else:
+                        existing_format = 'lines'
+                except Exception:
+                    existing_format = 'json'
             elif response.status_code != 404:
                 response.raise_for_status()
             
-            content = json.dumps(keys, indent=2)
+            # Normalize list, strip whitespace & duplicates while preserving original order of first occurrence
+            normalized = []
+            seen = set()
+            for k in keys:
+                if not k:
+                    continue
+                k2 = k.strip()
+                if not k2 or k2 in seen:
+                    continue
+                seen.add(k2)
+                normalized.append(k2)
+
+            if existing_format == 'lines':
+                # newline separated list (no JSON overhead)
+                content = '\n'.join(normalized) + ('\n' if normalized else '')
+            else:
+                content = json.dumps(normalized, indent=2)
             encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
             
             if not commit_message:
@@ -180,20 +220,21 @@ class GitHubStockManager:
 
 def test_github_connection():
     """Test GitHub connection and permissions."""
-    
-    config = {
-        "token": "YOUR-GITHUB-TOKEN",
-        "repo_owner": "YOUR-GITHUB-USERNAME",
-        "repo_name": "YOUR-REPO-NAME"
-    }
-    
     print("🔍 Testing GitHub Connection...")
     print("=" * 50)
-    
-    manager = GitHubStockManager(config["token"], config["repo_owner"], config["repo_name"])
+
+    token = os.getenv('GITHUB_TOKEN')
+    repo_owner = os.getenv('GITHUB_REPO_OWNER')
+    repo_name = os.getenv('GITHUB_REPO_NAME')
+
+    if not token or not repo_owner or not repo_name:
+        print("❌ GitHub configuration missing in environment variables (GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME required)")
+        return False
+
+    manager = GitHubStockManager(token, repo_owner, repo_name)
     
     try:
-        url = f"https://api.github.com/repos/{config['repo_owner']}/{config['repo_name']}"
+        url = f"https://api.github.com/repos/{repo_owner}/{repo_name}"
         response = requests.get(url, headers=manager.headers, timeout=10)
         
         if response.status_code == 200:
@@ -210,7 +251,33 @@ def test_github_connection():
         print(f"❌ Connection error: {e}")
         return False
     
-    files_to_test = ["7-Day Stock", "Keys Bought"]
+    files_to_test = []
+    try:
+        with open('config/products.json', 'r', encoding='utf-8') as f:
+            products_cfg = json.load(f)
+        
+        for product in products_cfg.get('products', []):
+            stock_file = product.get('stockGithubFile')
+            if stock_file:
+                if '/' not in stock_file:
+                    stock_file = f"Stock/{stock_file}"
+                if stock_file not in files_to_test:
+                    files_to_test.append(stock_file)
+        
+        bought_file = os.getenv('GITHUB_BOUGHT_FILE', products_cfg.get('github', {}).get('bought_file', 'Keys Bought'))
+        if bought_file and bought_file not in files_to_test:
+            files_to_test.append(bought_file)
+            
+    except Exception as e:
+        print(f"⚠️  Could not load products.json for file list: {e}")
+        files_to_test = []
+        bought_file = os.getenv('GITHUB_BOUGHT_FILE', 'Keys Bought')
+        if bought_file:
+            files_to_test.append(bought_file)
+    
+    if not files_to_test:
+        files_to_test = ["7-Day Stock", "Keys Bought"]
+        print("⚠️ Using default test files as no files were found in products.json")
     
     for file_path in files_to_test:
         print(f"\n📄 Testing file: {file_path}")
