@@ -2,15 +2,35 @@ class ProductManager {
     constructor() {
         this.products = [];
         this.user = null;
+        if (window.__INITIAL_PRODUCTS__) {
+            this._applyInitial(window.__INITIAL_PRODUCTS__);
+        }
         this.init();
+    }
+
+    _applyInitial(data){
+        try {
+            if (!data) return;
+            this.products = data.products || [];
+            this.mainProducts = (data.mainProducts || []).map(mp => ({
+                ...mp,
+                variants: (mp.variantProducts || []).map(v => v.id)
+            }));
+        } catch(e) {
+            console.warn('Failed applying initial products', e);
+        }
     }
 
     async init() {
         await this.checkAuth();
+        if (this.mainProducts && this.mainProducts.length) {
+            this.renderProducts();
+        }
         await this.loadProducts();
         this.renderProducts();
         this.renderAccountInfo();
         this.setupSearch();
+        this.initStockStream();
     }
 
     async makeAuthenticatedRequest(url, options = {}) {
@@ -19,37 +39,18 @@ class ProductManager {
             ...options
         };
 
-        const authToken = localStorage.getItem('auth_token');
-        if (authToken) {
-            defaultOptions.headers = {
-                ...defaultOptions.headers,
-                'Authorization': `Bearer ${authToken}`
-            };
-        }
-
         return fetch(url, defaultOptions);
     }
 
     async checkAuth() {
-        const storedUser = localStorage.getItem('user_data');
-        if (storedUser) {
-            try {
-                this.user = JSON.parse(storedUser);
-                this.renderAccountInfo();
-            } catch (e) {
-                localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
-            }
-        }
 
         try {
-            const response = await this.makeAuthenticatedRequest('http://localhost:5000/me');
+            const response = await this.makeAuthenticatedRequest('/me');
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.authenticated) {
                     this.user = data.user;
-                    localStorage.setItem('user_data', JSON.stringify(data.user));
                     this.renderAccountInfo();
                     return;
                 }
@@ -57,54 +58,68 @@ class ProductManager {
 
             console.log('Server authentication failed, clearing cached data');
             this.user = null;
-            localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             this.renderAccountInfo();
 
         } catch (error) {
             console.error('Auth check failed:', error);
             console.log('Network error during auth check, clearing cached data');
             this.user = null;
-            localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             this.renderAccountInfo();
         }
     }
 
+    _renderSkeletons(count=3){
+        const container = document.getElementById('products-container');
+        if(!container) return;
+        const skeleton = Array.from({length:count}).map(()=>`
+            <div class="product-card skeleton-card">
+                <div class="product-image-section skeleton skeleton-image"></div>
+                <div class="skeleton skeleton-text" style="width:70%; margin:0.75rem auto 0.25rem;"></div>
+                <div class="skeleton skeleton-text" style="width:40%; margin:0.25rem auto;"></div>
+                <div class="skeleton skeleton-text" style="width:55%; margin:0.75rem auto;"></div>
+                <div class="skeleton skeleton-text" style="width:90%; height:34px; border-radius:8px; margin-top:.75rem;"></div>
+            </div>`).join('');
+        container.innerHTML = skeleton;
+    }
+
+    showToast(message,type='error',timeout=5000){
+        const c=document.getElementById('toast-container');
+        if(!c) return;
+        const el=document.createElement('div');
+        el.className='toast '+(type==='error'?'toast-error':(type==='success'?'toast-success':''));
+        el.innerHTML=`<span>${message}</span><button class="toast-close" aria-label="Close">×</button>`;
+        c.appendChild(el);
+        const remove=()=>{el.style.animation='toast-out .25s forwards';setTimeout(()=>el.remove(),230);};
+        el.querySelector('.toast-close').onclick=remove;
+        if(timeout>0) setTimeout(remove,timeout);
+    }
+
     async loadProducts() {
         try {
+            if(!this.mainProducts || !this.mainProducts.length){
+                this._renderSkeletons(4);
+            }
             let response;
             try {
-                response = await fetch('http://localhost:5000/products');
+                response = await fetch('/products', { cache: 'no-cache' });
             } catch (serverError) {
-                console.warn('Server not available, loading from local file');
-                response = await fetch('config/products.json');
+                this.showToast('Server unavailable, loading fallback','error');
+                response = await fetch('config/products.json', { cache: 'no-cache' });
             }
-
             const data = await response.json();
-
-            if (data.success && data.products) {
-                this.mainProducts = data.products.filter(p => !p.featured);
-                this.featuredProducts = data.products.filter(p => p.featured);
-            } else {
-                this.products = data.products || [];
-                this.mainProducts = (data.mainProducts || []).map(mainProduct => {
-                    const variants = this.products.filter(p => p.parentProduct === mainProduct.id);
-                    const minPrice = variants.length > 0 ? Math.min(...variants.map(v => v.price)) : 1;
-                    const totalStock = variants.length > 0 ? variants.reduce((sum, v) => sum + (v.stock || 10), 0) : 10;
-
-                    return {
-                        ...mainProduct,
-                        minPrice,
-                        totalStock,
-                        variants: variants.map(v => v.id)
-                    };
-                });
-            }
+            this.products = data.products || [];
+            this.mainProducts = (data.mainProducts || []).map(mainProduct => {
+                const variants = (mainProduct.variantProducts || []).length ? mainProduct.variantProducts : this.products.filter(p => p.parentProduct === mainProduct.id);
+                const minPrice = variants.length > 0 ? Math.min(...variants.map(v => v.price || v.minPrice || 0)) : 0;
+                const totalStock = variants.length > 0 ? variants.reduce((sum, v) => sum + (v.stock || v.totalStock || 0), 0) : 0;
+                return { ...mainProduct, minPrice, totalStock, variants: variants.map(v => v.id) };
+            });
         } catch (error) {
-            console.error('Failed to load products:', error);
-            this.products = [];
-            this.mainProducts = [];
+            this.showToast('Failed to load products','error');
+            if (!this.products.length) {
+                this.products = [];
+                this.mainProducts = [];
+            }
         }
     }
 
@@ -189,7 +204,7 @@ class ProductManager {
                 <div class="product-card" data-product-id="${product.id}">
                     <div class="product-image-section">
                         <div class="image-carousel" data-images='${JSON.stringify(product.images)}'>
-                            <img src="${mainImageSrc}" alt="${product.name}" class="carousel-image active">
+                            <img src="${mainImageSrc}" alt="${product.name}" class="carousel-image active" loading="lazy" width="324" height="172">
                         </div>
                     </div>
                     
@@ -199,8 +214,7 @@ class ProductManager {
                         <div class="product-price">
                             <span class="price-label">Price:</span>
                             <span class="price-value">
-                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon">
-                                ${product.minPrice}
+                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon" width="14" height="14" loading="lazy"> ${product.minPrice}
                             </span>
                         </div>
                         <div class="product-stock ${stockClass}">${stockText}</div>
@@ -238,6 +252,70 @@ class ProductManager {
         this.renderRegularProducts();
     }
 
+    initStockStream() {
+        try {
+            if (!window.EventSource) {
+                console.warn('EventSource not supported in this browser.');
+                return;
+            }
+            this.stockSource = new EventSource('/stock-stream');
+            this.stockSource.onmessage = (ev) => {
+                try {
+                    const data = JSON.parse(ev.data);
+                    this.applyLiveStock(data);
+                } catch (e) {
+                    console.warn('Failed to parse stock event', e);
+                }
+            };
+            this.stockSource.onerror = () => {
+                if (this.stockSource.readyState === EventSource.CLOSED) {
+                    setTimeout(() => this.initStockStream(), 4000);
+                }
+            };
+        } catch (e) {
+            console.warn('SSE init failed', e);
+        }
+    }
+
+    applyLiveStock(snapshot) {
+        if (!snapshot || !snapshot.products) return;
+        let changed = false;
+        for (const pid in snapshot.products) {
+            const info = snapshot.products[pid];
+            const existing = this.products.find(p => p.id === pid);
+            if (existing && typeof info.stock === 'number' && existing.stock !== info.stock) {
+                existing.stock = info.stock;
+                changed = true;
+            }
+        }
+        if (Array.isArray(snapshot.mainProducts)) {
+            snapshot.mainProducts.forEach(mp => {
+                const target = this.mainProducts.find(p => p.id === mp.id);
+                if (target) {
+                    if (typeof mp.totalStock === 'number' && target.totalStock !== mp.totalStock) {
+                        target.totalStock = mp.totalStock;
+                        changed = true;
+                    }
+                    if (typeof mp.minPrice === 'number') {
+                        target.minPrice = mp.minPrice;
+                    }
+                }
+            });
+        } else {
+            this.mainProducts.forEach(mp => {
+                const variants = this.products.filter(p => p.parentProduct === mp.id);
+                const total = variants.reduce((sum, v) => sum + (typeof v.stock === 'number' ? v.stock : 0), 0);
+                if (total !== mp.totalStock) {
+                    mp.totalStock = total;
+                    changed = true;
+                }
+            });
+        }
+        if (changed) {
+            this.renderRegularProducts();
+        }
+    }
+
     renderFeaturedProducts() {
         const featuredContainer = document.getElementById('featured-slides');
         const dotsContainer = document.getElementById('carousel-dots');
@@ -247,19 +325,19 @@ class ProductManager {
 
         if (featuredProducts.length === 0) return;
 
-        const featuredHtml = featuredProducts.map((product, index) => {
+        const featuredHtml = featuredProducts.map((product) => {
             const mainImageSrc = product.mainImage || (product.images && product.images[0]) || '';
 
             return `
                 <div class="featured-slide">
                     <div class="featured-card" onclick="redirectToProduct('${product.id}')">
-                        <img src="${mainImageSrc}" alt="${product.name}" class="featured-image">
+                        <img src="${mainImageSrc}" alt="${product.name}" class="featured-image" loading="lazy" width="800" height="300">
                         <div class="featured-overlay"></div>
                         
                         <div class="featured-price-badge">
                             <div class="featured-price-label">Starting At</div>
                             <div class="featured-price-value">
-                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon" style="width: 16px; height: 16px;">
+                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon" width="16" height="16" loading="lazy">
                                 ${product.minPrice}
                             </div>
                         </div>
@@ -304,7 +382,7 @@ class ProductManager {
             let isDisabled = product.totalStock === 0;
 
             const mainImageSrc = product.mainImage || (product.images && product.images[0]) || '';
-            const imagesHtml = `<img src="${mainImageSrc}" alt="${product.name}" class="carousel-image active">`;
+            const imagesHtml = `<img src="${mainImageSrc}" alt="${product.name}" class="carousel-image active" loading="lazy" width="324" height="172">`;
 
             return `
                 <div class="product-card" data-product-id="${product.id}">
@@ -320,8 +398,7 @@ class ProductManager {
                         <div class="product-price">
                             <span class="price-label">Price:</span>
                             <span class="price-value">
-                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon">
-                                ${product.minPrice}
+                                <img src="icon/Robux.svg" alt="Robux" class="robux-icon" width="14" height="14" loading="lazy"> ${product.minPrice}
                             </span>
                         </div>
                         <div class="product-stock ${stockClass}">${stockText}</div>
@@ -378,10 +455,11 @@ class ProductManager {
 
     async refreshStock() {
         try {
+            this._renderSkeletons(2);
             await this.loadProducts();
             this.renderProducts();
         } catch (error) {
-            console.error('Failed to refresh stock:', error);
+            this.showToast('Stock refresh failed','error');
         }
     }
 
@@ -444,16 +522,12 @@ function previousImage(button) {
 
 async function logout() {
     try {
-        await productManager.makeAuthenticatedRequest('http://localhost:5000/logout', {
+    await productManager.makeAuthenticatedRequest('/logout', {
             method: 'POST'
         });
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('auth_token');
         window.location.reload();
     } catch (error) {
         console.error('Logout failed:', error);
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('auth_token');
         window.location.reload();
     }
 }
