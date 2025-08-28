@@ -13,7 +13,10 @@ class LicenseManager {
         this.rateLimitCache = new Map();
         this.purchaseAttempts = new Map();
         this.state = 'idle';
-    this.pendingSession = null; 
+        this.pendingSession = null; 
+        this.autoCheckTimer = null;
+        this.countdownInterval = null;
+        this.nextAutoCheckAt = null;
 
         this.init();
     }
@@ -402,6 +405,8 @@ class LicenseManager {
             if (purchaseContainer) {
                 this.showManualCheckButton(purchaseContainer);
             }
+            this.renderPendingSessionIndicator();
+            this.scheduleAutoCheck(true);
         } catch(e){ 
             console.warn('startPurchaseSession failed:', e.message);
             this.updateStatus('Ready for purchase verification. Buy the gamepass, then click the "I Have Purchased The Gamepass" button below.', 'blue', true);
@@ -745,13 +750,7 @@ class LicenseManager {
         }
         if (this.isCheckingPurchase) return;
         this.isCheckingPurchase = true;
-        
-        const delaySeconds = 15;
-        for (let i = delaySeconds; i > 0; i--) {
-            this.updateStatus(`Waiting for Roblox to process your purchase... ${i} seconds`, 'blue', true);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
+        this.clearAutoCheck();
         this.updateStatus('Verifying your purchase...', 'gray', true);
         try {
             if (!this.pendingSession || this.pendingSession.username.toLowerCase() !== username.toLowerCase()) {
@@ -786,6 +785,9 @@ class LicenseManager {
             this.updateStatus('Error checking purchase. Please try again in a moment.', 'red');
         } finally {
             this.isCheckingPurchase = false;
+            if (!this.purchaseCompleted) {
+                this.scheduleAutoCheck();
+            }
         }
     }
 
@@ -882,6 +884,9 @@ class LicenseManager {
         statusElement.appendChild(actionsWrapper);
         this.showManualCheckButton(actionsWrapper);
 
+    this.renderPendingSessionIndicator();
+    this.scheduleAutoCheck();
+
         const messageZone = document.createElement('div');
         messageZone.className = 'status-messages';
         messageZone.setAttribute('aria-live','polite');
@@ -944,6 +949,8 @@ class LicenseManager {
         const js = await resp.json();
         if (js && js.started_at) {
             this.pendingSession = { username, productId: this.product.id, started_at: js.started_at };
+            this.renderPendingSessionIndicator();
+            this.scheduleAutoCheck(true);
         }
         return js;
     }
@@ -965,6 +972,68 @@ class LicenseManager {
             setTimeout(tick,1000);
         };
         tick();
+    }
+
+    renderPendingSessionIndicator(){
+        if (!this.pendingSession) return;
+        const statusElement = document.getElementById('status');
+        if (!statusElement) return;
+        let indicator = document.getElementById('pending-session-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'pending-session-indicator';
+            indicator.style.marginTop = '8px';
+            indicator.style.fontSize = '0.7rem';
+            indicator.style.color = '#94a3b8';
+            statusElement.prepend(indicator);
+        }
+        const startedAt = this.pendingSession.started_at;
+        indicator.setAttribute('data-started-at', startedAt);
+        if (indicator._elapsedInterval) clearInterval(indicator._elapsedInterval);
+        const parse = (s)=>{
+            if (!s) return null; let t=s.replace('Z',''); try { return new Date(t); } catch(e){ return null; }
+        };
+        const base = parse(startedAt);
+        if (!base) { indicator.textContent = 'Session active'; return; }
+        const updateElapsed = ()=>{
+            const now = Date.now();
+            const diffSec = Math.floor((now - base.getTime())/1000);
+            indicator.textContent = `Session started ${diffSec}s ago` + (this.nextAutoCheckAt?` • Auto check in ${Math.max(0, Math.ceil((this.nextAutoCheckAt - now)/1000))}s`:'');
+        };
+        updateElapsed();
+        indicator._elapsedInterval = setInterval(updateElapsed, 1000);
+    }
+
+    scheduleAutoCheck(reset=false){
+        if (!this.pendingSession || this.purchaseCompleted) return;
+        this.clearAutoCheck();
+        const started = new Date(this.pendingSession.started_at.replace('Z','')).getTime();
+        const ageSec = (Date.now() - started)/1000;
+        let delaySec;
+        if (ageSec < 10) delaySec = 5; 
+        else if (ageSec < 30) delaySec = 8;
+        else delaySec = 12; 
+        this.nextAutoCheckAt = Date.now() + delaySec*1000;
+        this.countdownInterval = setInterval(()=>{
+            const indicator = document.getElementById('pending-session-indicator');
+            if (!indicator) return;
+            const remain = Math.max(0, Math.ceil((this.nextAutoCheckAt - Date.now())/1000));
+            const txt = indicator.textContent.replace(/• Auto check in .*s/, `• Auto check in ${remain}s`);
+            indicator.textContent = txt;
+        },1000);
+        this.autoCheckTimer = setTimeout(async ()=>{
+            this.clearAutoCheck();
+            if (this.purchaseCompleted) return;
+            try {
+                await this.manualCheck(); 
+            } catch(e){ console.warn('Auto check failed', e); this.scheduleAutoCheck(); }
+        }, delaySec*1000);
+    }
+
+    clearAutoCheck(){
+        if (this.autoCheckTimer) { clearTimeout(this.autoCheckTimer); this.autoCheckTimer = null; }
+        if (this.countdownInterval) { clearInterval(this.countdownInterval); this.countdownInterval = null; }
+        this.nextAutoCheckAt = null;
     }
 }
 
