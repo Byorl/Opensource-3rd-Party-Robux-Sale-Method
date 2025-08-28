@@ -1,16 +1,24 @@
 class LicenseManager {
     constructor() {
         this.product = null;
+        this.mainProduct = null;
+        this.productId = null;
+        this.planId = null;
+        this.user = null;
+        this.isAuthenticated = false;
+
+        this.currentUsername = null;
+        this.isCheckingPurchase = false;
+        this.purchaseCompleted = false;
         this.rateLimitCache = new Map();
         this.purchaseAttempts = new Map();
-        this.isWaitingForPurchase = false;
-        this.purchaseCheckInterval = null;
-        this.currentUsername = null;
+        this.state = 'idle';
+
         this.init();
-        this.setupVisibilityDetection();
     }
 
     async init() {
+        console.log('LicenseManager.init() called');
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
         const planId = urlParams.get('plan');
@@ -23,19 +31,17 @@ class LicenseManager {
         this.productId = productId;
         this.planId = planId;
 
+        console.log('Checking auth...');
         await this.checkAuth();
+        console.log('Loading product...');
         await this.loadProduct(productId, planId);
+        console.log('Rendering product info...');
         this.renderProductInfo();
+        console.log('Rendering account info...');
         this.renderAccountInfo();
+        console.log('Checking existing purchase...');
         this.checkExistingPurchase();
-
-        const pendingUsername = localStorage.getItem('pendingPurchaseUsername');
-        if (pendingUsername) {
-            console.log('Found pending purchase state for:', pendingUsername);
-            this.showPendingPurchaseOption(pendingUsername);
-        } else {
-            console.log('No pending purchase state found, ready for user input');
-        }
+        console.log('Ready (no pending purchase revival).');
     }
 
     makeAuthenticatedRequest(url, options = {}) {
@@ -43,14 +49,6 @@ class LicenseManager {
             credentials: 'include',
             ...options
         };
-
-        const authToken = localStorage.getItem('auth_token');
-        if (authToken) {
-            defaultOptions.headers = {
-                ...defaultOptions.headers,
-                'Authorization': `Bearer ${authToken}`
-            };
-        }
 
         return fetch(url, defaultOptions);
     }
@@ -60,20 +58,21 @@ class LicenseManager {
         if (storedUser) {
             try {
                 this.user = JSON.parse(storedUser);
+                this.isAuthenticated = true;
                 this.renderAccountInfo();
             } catch (e) {
                 localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
             }
         }
 
         try {
-            const response = await this.makeAuthenticatedRequest('http://localhost:5000/me');
+            const response = await this.makeAuthenticatedRequest('/me');
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.authenticated) {
                     this.user = data.user;
+                    this.isAuthenticated = true;
                     localStorage.setItem('user_data', JSON.stringify(data.user));
                     this.renderAccountInfo();
                     return;
@@ -82,16 +81,16 @@ class LicenseManager {
 
             console.log('Server authentication failed, clearing cached data');
             this.user = null;
+            this.isAuthenticated = false;
             localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             this.renderAccountInfo();
             
         } catch (error) {
             console.error('Auth check failed:', error);
             console.log('Network error during auth check, clearing cached data');
             this.user = null;
+            this.isAuthenticated = false;
             localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             this.renderAccountInfo();
         }
     }
@@ -100,7 +99,7 @@ class LicenseManager {
         try {
             let response;
             try {
-                response = await fetch('http://localhost:5000/products');
+                response = await fetch('/products');
             } catch (serverError) {
                 console.warn('Server not available, loading from local file');
                 response = await fetch('config/products.json');
@@ -142,8 +141,12 @@ class LicenseManager {
     }
 
     renderProductInfo() {
+        console.log('renderProductInfo() called');
         const container = document.getElementById('product-showcase');
-        if (!container || !this.product || !this.mainProduct) return;
+        if (!container || !this.product || !this.mainProduct) {
+            console.log('Missing container, product, or mainProduct');
+            return;
+        }
 
         const productBreadcrumbLink = document.getElementById('product-breadcrumb-link');
         const backLink = document.getElementById('back-link');
@@ -157,6 +160,7 @@ class LicenseManager {
 
         const mainImageSrc = this.mainProduct.mainImage || (this.mainProduct.images && this.mainProduct.images[0]) || '';
 
+        console.log('Creating form HTML...');
         container.innerHTML = `
             <div class="showcase-content">
                 <img src="${mainImageSrc}" alt="${this.mainProduct.name}" class="product-image">
@@ -195,27 +199,72 @@ class LicenseManager {
                     </button>
                 </form>
             </div>
+            <div id="status" class="status-container" style="display: none;"></div>
+            <div id="keyContainer" class="key-result" style="display:none;">
+                <div class="key-title">🎉 Purchase Successful!</div>
+                <div class="key-display" id="key-display"></div>
+                <button class="copy-btn" onclick="copyKey()">
+                    Copy License Key
+                </button>
+            </div>
         `;
 
+        console.log('Form HTML created, setting up auth buttons...');
         if (backLink && this.productId) {
             backLink.href = `product.html?id=${this.productId}`;
         }
 
         this.setupAuthButtons();
 
+        console.log('Checking if user has roblox_username...');
         if (this.user && this.user.roblox_username) {
+            console.log('User has roblox_username:', this.user.roblox_username);
             const usernameInput = document.getElementById('username');
             const usernameHint = document.getElementById('username-hint');
             if (usernameInput) {
+                console.log('Setting username input value');
                 usernameInput.value = this.user.roblox_username;
                 usernameInput.style.borderColor = '#6366f1';
                 usernameInput.title = 'Pre-filled from your account';
 
                 if (usernameHint) {
+                    console.log('Showing username hint');
                     usernameHint.style.display = 'block';
                 }
             }
+        } else {
+            console.log('User does not have roblox_username or is not logged in');
         }
+        
+        setTimeout(() => {
+            const form = document.getElementById('form');
+            const usernameInput = document.getElementById('username');
+            const continueButton = document.getElementById('continueButton');
+            const purchaseSection = document.querySelector('.purchase-section');
+            const statusElement = document.getElementById('status');
+            console.log('Form elements after renderProductInfo():');
+            console.log('- Form:', form, 'display:', form ? form.style.display : 'not found');
+            console.log('- Username input:', usernameInput, 'display:', usernameInput ? usernameInput.style.display : 'not found');
+            console.log('- Continue button:', continueButton, 'display:', continueButton ? continueButton.style.display : 'not found');
+            console.log('- Purchase section:', purchaseSection, 'display:', purchaseSection ? purchaseSection.style.display : 'not found');
+            console.log('- Status element:', statusElement, 'display:', statusElement ? statusElement.style.display : 'not found');
+            
+            if (form && form.style.display === 'none') {
+                console.log('Form was hidden, making it visible');
+                form.style.display = 'block';
+            }
+            if (purchaseSection && purchaseSection.style.display === 'none') {
+                console.log('Purchase section was hidden, making it visible');
+                purchaseSection.style.display = 'block';
+            }
+            if (statusElement && statusElement.style.display === 'block') {
+                console.log('Status was visible on page load, hiding it');
+                statusElement.style.display = 'none';
+                statusElement.innerHTML = '';
+            }
+        }, 100);
+        
+        console.log('renderProductInfo() completed');
     }
 
     setupAuthButtons() {
@@ -235,45 +284,58 @@ class LicenseManager {
         const userInfo = document.getElementById('user-info');
         const authSection = document.getElementById('auth-section');
         const usernameDisplay = document.getElementById('username-display');
+        const navHistoryLink = document.getElementById('nav-history-link');
 
         if (this.user && userInfo && authSection && usernameDisplay) {
             usernameDisplay.textContent = this.user.username;
             userInfo.style.display = 'flex';
             authSection.style.display = 'none';
+            if (navHistoryLink) navHistoryLink.style.display = 'inline';
         } else if (userInfo && authSection) {
             userInfo.style.display = 'none';
             authSection.style.display = 'block';
+            if (navHistoryLink) navHistoryLink.style.display = 'none';
         }
     }
 
     async logout() {
         try {
-            await this.makeAuthenticatedRequest('http://localhost:5000/logout', {
+            await this.makeAuthenticatedRequest('/logout', {
                 method: 'POST'
             });
             localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             window.location.reload();
         } catch (error) {
             console.error('Logout failed:', error);
             localStorage.removeItem('user_data');
-            localStorage.removeItem('auth_token');
             window.location.reload();
         }
     }
 
     checkExistingPurchase() {
+        if (!this.product) return;
         const username = localStorage.getItem('lastUsername');
+        if (!username) return;
         const purchaseKey = `purchase_${this.product.id}_${username}`;
-        const existingPurchase = localStorage.getItem(purchaseKey);
-
-        if (existingPurchase && username) {
+        try {
+            const existingPurchase = localStorage.getItem(purchaseKey);
+            if (!existingPurchase) return;
             const purchaseData = JSON.parse(existingPurchase);
             const now = Date.now();
-
             if (now - purchaseData.timestamp < 24 * 60 * 60 * 1000 && purchaseData.keyIssued) {
-                document.getElementById('username').value = username;
+                const usernameInput = document.getElementById('username');
+                if (usernameInput) usernameInput.value = username;
             }
+        } catch (e) { /* ignore */ }
+    }
+
+    checkTransactionClaimed(transactionId) {
+        if (!transactionId) return false;
+        try {
+            const claimedTransactions = JSON.parse(localStorage.getItem('claimed_transactions') || '[]');
+            return claimedTransactions.includes(transactionId);
+        } catch (e) {
+            return false;
         }
     }
 
@@ -299,251 +361,147 @@ class LicenseManager {
         localStorage.setItem('lastUsername', username);
     }
 
-    trackSuccessfulPurchase(username) {
+    trackSuccessfulPurchase(username, transactionId) {
         const purchaseKey = `purchase_${this.product.id}_${username}`;
         localStorage.setItem(purchaseKey, JSON.stringify({
             keyIssued: true,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            transactionId: transactionId
         }));
+        
+        if (transactionId) {
+            const claimedTransactions = JSON.parse(localStorage.getItem('claimed_transactions') || '[]');
+            if (!claimedTransactions.includes(transactionId)) {
+                claimedTransactions.push(transactionId);
+                localStorage.setItem('claimed_transactions', JSON.stringify(claimedTransactions));
+            }
+        }
     }
 
     async validatePurchase() {
-        const username = document.getElementById('username').value.trim();
-
+        const usernameInput = document.getElementById('username');
+        const username = usernameInput ? usernameInput.value.trim() : '';
         if (!username) {
             alert('Please enter your username.');
             return;
         }
-
         if (this.isRateLimited(username)) {
             this.updateStatus('Please wait 3 seconds before trying again.', 'orange');
             return;
         }
-
         this.currentUsername = username;
-        localStorage.removeItem('pendingPurchaseUsername');
-        localStorage.setItem('pendingPurchaseUsername', username);
-
         this.trackPurchaseAttempt(username);
         this.hideFormElements();
-        this.updateStatus('Checking purchase status...', 'gray');
-
-        try {
-            await this.checkGamepassAndIssueKey(username);
-        } catch (error) {
-            this.handleValidationError(error);
+        this.showPurchasePrompt(); 
+        
+        try { 
+            await this.startPurchaseSession(username); 
+            this.updateStatus('Ready for purchase verification. Buy the gamepass, then click the "I Have Purchased The Gamepass" button below.', 'blue', true);
+            const purchaseContainer = document.querySelector('.purchase-container');
+            if (purchaseContainer) {
+                this.showManualCheckButton(purchaseContainer);
+            }
+        } catch(e){ 
+            console.warn('startPurchaseSession failed:', e.message);
+            this.updateStatus('Ready for purchase verification. Buy the gamepass, then click the "I Have Purchased The Gamepass" button below.', 'blue', true);
+            const purchaseContainer = document.querySelector('.purchase-container');
+            if (purchaseContainer) {
+                this.showManualCheckButton(purchaseContainer);
+            }
         }
+        
     }
 
     hideFormElements() {
-        const elementsToHide = ['product-info', 'username', 'continueButton', 'usernameLabel'];
-        elementsToHide.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.style.display = 'none';
-        });
-
-        const purchaseForm = document.querySelector('.purchase-form');
-        if (purchaseForm) {
-            purchaseForm.style.display = 'none';
-        }
+        const purchaseSection = document.querySelector('.purchase-section');
+        if (purchaseSection) purchaseSection.style.display = 'none';
     }
 
     async checkGamepassAndIssueKey(username) {
+        if (this.isCheckingPurchase) return;
+        this.isCheckingPurchase = true;
         try {
-            console.log('Product object:', this.product);
-            console.log('Gamepass ID:', this.product.gamepass_id);
-            console.log('Gamepass URL:', this.product.gamepassUrl);
-
             const response = await this.fetchGamepassCheck(username, true);
-            console.log('Purchase validation response:', response);
-
-            if (response.hasGamepass) {
-                if (response.keyIssued && response.key) {
-                    this.updateStatus('Purchase Completed!', 'green');
-                    this.displayKey(response.key);
-                    this.trackSuccessfulPurchase(username);
-                } else {
-                    this.updateStatus(response.message || 'Error generating key', 'red');
-                    this.displayRetryButton();
-                }
-            } else {
-                this.updateStatus('Gamepass not owned. Redirecting to purchase...', 'blue');
-                console.log('Opening gamepass URL:', this.product.gamepassUrl);
-                if (this.product.gamepassUrl) {
-                    window.open(this.product.gamepassUrl, '_blank');
-                    this.updateStatus('Please complete your purchase in the new tab, then return here.', 'orange');
-                    setTimeout(() => this.showPurchaseButton(), 2000);
-                    const username = this.currentUsername || document.getElementById('username').value.trim();
-                    if (username) {
-                        localStorage.setItem('pendingPurchaseUsername', username);
-                        this.currentUsername = username;
-                        this.startPurchaseVerification(username);
+            if (response.needStart) {
+                try {
+                    await this.startPurchaseSession(username);
+                    const retry = await this.fetchGamepassCheck(username, true);
+                    if (retry.transactionId && this.checkTransactionClaimed(retry.transactionId)) {
+                        this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+                        if (retry.key) {
+                            this.showExistingKeyOption(retry.key, retry.expiryDate);
+                        }
+                        return;
                     }
-                } else {
-                    console.error('No gamepass URL found for product:', this.product);
-                    this.showPurchaseButton();
+                    this._handleCheckResponse(username, retry);
+                } catch (e) {
+                    this.updateStatus('Login required before verifying purchase.', 'red');
                 }
-            }
-        } catch (error) {
-            this.handleValidationError(error);
-        }
-    }
-
-    setupVisibilityDetection() {
-        let wasHidden = false;
-        let lastCheckTime = 0;
-
-        const checkWithThrottle = () => {
-            const now = Date.now();
-            if (now - lastCheckTime < 500) {
-                console.log('Check throttled, too recent');
                 return;
             }
-            lastCheckTime = now;
-            console.log('User returned to tab, checking purchase status...');
-            this.checkPurchaseOnReturn();
-        };
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                wasHidden = true;
-            } else if (wasHidden && this.isWaitingForPurchase && this.currentUsername) {
-                wasHidden = false;
-                setTimeout(checkWithThrottle, 100);
-            }
-        });
-    }
-
-    async checkPurchaseOnReturn() {
-        if (!this.isWaitingForPurchase || !this.currentUsername) return;
-
-        try {
-            const response = await this.fetchGamepassCheck(this.currentUsername, true);
-
-            if (response.hasGamepass) {
-                this.stopPurchaseVerification();
-                if (response.keyIssued && response.key) {
-                    this.updateStatus('Welcome back! Purchase detected and completed!', 'green');
-                    this.displayKey(response.key);
-                    this.trackSuccessfulPurchase(this.currentUsername);
-                } else {
-                    this.updateStatus('Purchase detected, but there was an issue with key generation.', 'red');
-                    this.displayRetryButton();
+            if (response.transactionId && this.checkTransactionClaimed(response.transactionId)) {
+                this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+                if (response.key) {
+                    this.showExistingKeyOption(response.key, response.expiryDate);
                 }
-            } else {
-                this.showManualCheckOption();
+                return;
             }
-        } catch (error) {
-            console.error('Error checking purchase on return:', error);
+            this._handleCheckResponse(username, response);
+        } catch (e) {
+            console.error('checkGamepassAndIssueKey error:', e);
+            this.updateStatus('Error validating purchase. You can still try manual check after buying.', 'red');
+        } finally {
+            this.isCheckingPurchase = false;
         }
     }
 
-    showManualCheckOption() {
+    _handleCheckResponse(username, response){
+        if (!response) return;
+        if (!response.hasGamepass) {
+            return;
+        }
+        if (response.transactionId && this.checkTransactionClaimed(response.transactionId)) {
+            this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+            if (response.key) {
+                this.showExistingKeyOption(response.key, response.expiryDate);
+            }
+            return;
+        }
         const statusElement = document.getElementById('status');
-
-        if (!statusElement.querySelector('.manual-check-btn')) {
-            const manualCheckContainer = document.createElement('div');
-            manualCheckContainer.className = 'manual-check-container';
-            manualCheckContainer.style.marginTop = '20px';
-
-            manualCheckContainer.innerHTML = `
-                <p style="color: #666; margin-bottom: 15px;">
-                    🔄 Returned from purchase? Click below to check if you've bought the gamepass:
-                </p>
-                <button class="btn manual-check-btn" onclick="licenseManager.manualPurchaseCheck()">
-                    I have purchased the gamepass
-                </button>
-            `;
-
-            statusElement.appendChild(manualCheckContainer);
-        }
-    }
-
-    async manualPurchaseCheck() {
-        if (!this.currentUsername) return;
-
-        const manualCheckContainer = document.querySelector('.manual-check-container');
-        if (manualCheckContainer) {
-            manualCheckContainer.remove();
-        }
-
-        this.updateStatus('Checking your purchase...', 'gray');
-
-        try {
-            const response = await this.fetchGamepassCheck(this.currentUsername, true);
-
-            if (response.hasGamepass) {
-                this.stopPurchaseVerification();
-                if (response.keyIssued && response.key) {
-                    this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
-                    this.displayKey(response.key);
-                    this.trackSuccessfulPurchase(this.currentUsername);
-                } else {
-                    this.updateStatus('Purchase confirmed, but there was an issue with key generation.', 'red');
-                    this.displayRetryButton();
-                }
+        if (statusElement) statusElement.innerHTML = '';
+        if (response.keyIssued && response.key) {
+            if (response.isNewKey) {
+                this.updateStatus('Purchase Completed!', 'green');
+                this.displayKey(response.key);
+                this.trackSuccessfulPurchase(username, response.transactionId);
             } else {
-                this.updateStatus('No purchase detected yet. Make sure you\'ve completed the purchase.', 'orange');
-                setTimeout(() => this.showManualCheckOption(), 3000);
+                this.updateStatus('You already claimed this key earlier. Click below to view it again.', 'blue');
+                this.showExistingKeyOption(response.key, response.expiryDate);
             }
-        } catch (error) {
-            this.updateStatus('Error checking purchase. Please try again.', 'red');
-            setTimeout(() => this.showManualCheckOption(), 2000);
+        } else {
+            this.updateStatus(response.message || 'Error generating key', 'red');
+            this.displayRetryButton();
         }
     }
+    
 
-    stopPurchaseVerification() {
-        this.isWaitingForPurchase = false;
-        if (this.purchaseCheckInterval) {
-            clearInterval(this.purchaseCheckInterval);
-            this.purchaseCheckInterval = null;
-        }
+    setupVisibilityDetection() {}
+    checkPurchaseOnReturn() {}
+
+    showManualCheckButton(parent) {
+        if (parent.querySelector('.manual-check-container')) return;
+        const div = document.createElement('div');
+        div.className = 'manual-check-container action-card';
+        div.style.textAlign = 'center';
+        div.innerHTML = `
+            <h3 style="margin:0 0 8px 0;font-size:1rem;color:#fff;">Already Purchased?</h3>
+            <p style="margin:0 0 14px 0; color:#cbd5e1;font-size:0.85rem;">If you've just bought it, click below to verify and get your key.</p>
+            <button class="btn secondary-btn" onclick="licenseManager.manualCheck()">I Have Purchased The Gamepass</button>        `;
+        parent.appendChild(div);
     }
 
-    async startPurchaseVerification(username) {
-        this.isWaitingForPurchase = true;
-        this.currentUsername = username;
-        localStorage.setItem('pendingPurchaseUsername', username);
-
-        this.updateStatus('Waiting for purchase... We\'ll automatically detect when you return!', 'gray');
-
-        setTimeout(() => this.showManualCheckOption(), 2000);
-
-        return new Promise((resolve, reject) => {
-            this.purchaseCheckInterval = setInterval(async () => {
-                try {
-                    const response = await this.fetchGamepassCheck(username);
-                    console.log('Received response:', response);
-
-                    if (response.hasGamepass) {
-                        this.stopPurchaseVerification();
-                        if (response.keyIssued) {
-                            this.updateStatus('Purchase Completed!', 'green');
-                            this.displayKey(response.key);
-                            this.trackSuccessfulPurchase(username);
-                        } else {
-                            this.updateStatus('Key already claimed for this gamepass.', 'red');
-                            this.displayRetryOption(username);
-                        }
-                        resolve();
-                    }
-                } catch (error) {
-                    this.stopPurchaseVerification();
-                    this.handleValidationError(error);
-                    reject(error);
-                }
-            }, 5000);
-
-            setTimeout(() => {
-                if (this.isWaitingForPurchase) {
-                    this.stopPurchaseVerification();
-                    this.updateStatus('Auto-check timed out, but you can still check manually.', 'orange');
-                    this.showManualCheckOption();
-                    reject(new Error('Verification timeout'));
-                }
-            }, 90000);
-        });
-    }
+    stopPurchaseVerification() {}
+    startPurchaseVerification() {}
 
     async fetchGamepassCheck(username, forceRefresh = false) {
         const maxRetries = 3;
@@ -568,12 +526,7 @@ class LicenseManager {
                     'Content-Type': 'application/json',
                 };
 
-                const authToken = localStorage.getItem('auth_token');
-                if (authToken) {
-                    headers['Authorization'] = `Bearer ${authToken}`;
-                }
-
-                const response = await fetch('http://localhost:5000/check-gamepass', {
+                const response = await fetch('/check-gamepass', {
                     method: 'POST',
                     headers: headers,
                     credentials: 'include',
@@ -610,16 +563,58 @@ class LicenseManager {
         }
     }
 
+    startPendingPurchase() { }
+
+    showRepurchaseNeeded(priorKeyCount) {
+        let statusElement = document.getElementById('status');
+
+        if (!statusElement) {
+            console.log('Status element not found in showRepurchaseNeeded, creating it...');
+            const container = document.getElementById('product-showcase');
+            if (container) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'status';
+                statusDiv.className = 'status-container';
+                statusDiv.style.display = 'none';
+                container.appendChild(statusDiv);
+                statusElement = statusDiv;
+            } else {
+                console.error('Could not find product-showcase container to create status element');
+                return;
+            }
+        }
+
+        const container = document.createElement('div');
+        container.className = 'repurchase-needed';
+        container.style.marginTop = '16px';
+        container.style.padding = '16px';
+        container.style.border = '1px solid #ddd';
+        container.style.borderRadius = '8px';
+        container.style.background = '#fff';
+        const historyLink = this.isAuthenticated ? `<p style="margin:8px 0 0 0;font-size:0.8rem;color:#555">You have already claimed <strong>${priorKeyCount}</strong> key${priorKeyCount===1?'':'s'} for this product. <a href="history.html" style="text-decoration:underline">View purchase history</a>.</p>` : `<p style="margin:8px 0 0 0;font-size:0.8rem;color:#555">You have already claimed keys for this product previously.</p>`;
+        container.innerHTML = `
+            <h3 style="margin:0 0 8px 0;font-size:1rem;">No New Purchase Detected</h3>
+            <p style="margin:0 0 8px 0;font-size:0.9rem;color:#444">To obtain another key you must remove (delete) the gamepass from your Roblox inventory and buy it again. After buying, return here and we'll detect the new transaction.</p>
+            ${historyLink}
+            <div style="margin-top:12px;text-align:center;">
+                <button class="btn primary-btn" onclick="licenseManager.redirectToPurchase()">Re-Purchase Now</button>
+            </div>
+        `;
+        statusElement.innerHTML = '';
+        statusElement.appendChild(container);
+    }
+
     displayKey(key) {
         const keyContainer = document.getElementById('keyContainer');
         const keyDisplay = document.getElementById('key-display');
+        if (!keyContainer || !keyDisplay) return;
+        if (keyContainer.getAttribute('data-shown') === 'true') return;
         keyDisplay.textContent = key;
         keyContainer.style.display = 'block';
-
-        const purchaseForm = document.querySelector('.purchase-form');
-        if (purchaseForm) {
-            purchaseForm.style.display = 'none';
-        }
+        keyContainer.setAttribute('data-shown','true');
+        const statusElement = document.getElementById('status');
+        if (statusElement) statusElement.style.display = 'none';
+        this.purchaseCompleted = true;
     }
 
     displayRetryOption(username) {
@@ -644,7 +639,24 @@ class LicenseManager {
     }
 
     displayRetryButton() {
-        const statusElement = document.getElementById('status');
+        let statusElement = document.getElementById('status');
+
+        if (!statusElement) {
+            console.log('Status element not found in displayRetryButton, creating it...');
+            const container = document.getElementById('product-showcase');
+            if (container) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'status';
+                statusDiv.className = 'status-container';
+                statusDiv.style.display = 'none';
+                container.appendChild(statusDiv);
+                statusElement = statusDiv;
+            } else {
+                console.error('Could not find product-showcase container to create status element');
+                return;
+            }
+        }
+
         const retryButton = document.createElement('button');
         retryButton.className = 'btn retry-btn';
         retryButton.innerText = 'Try Again';
@@ -653,202 +665,244 @@ class LicenseManager {
         statusElement.appendChild(retryButton);
     }
 
-    updateStatus(message, color) {
-        const statusElement = document.getElementById('status');
-
-        let statusClass = 'status-info';
-        if (color === 'green') statusClass = 'status-success';
-        else if (color === 'red') statusClass = 'status-error';
-        else if (color === 'orange') statusClass = 'status-warning';
-        else if (color === 'blue') statusClass = 'status-info';
-
-        statusElement.innerHTML = `<div class="status-message ${statusClass}">${message}</div>`;
-    }
-
-    showManualCheckOption() {
-        const statusElement = document.getElementById('status');
-        const manualContainer = document.createElement('div');
-        manualContainer.className = 'manual-check-container';
-        manualContainer.style.marginTop = '20px';
-        manualContainer.style.textAlign = 'center';
-
-        const username = this.currentUsername || localStorage.getItem('pendingPurchaseUsername') || 'unknown';
-        manualContainer.innerHTML = `
-            <p style="margin-bottom: 15px;">Already purchased? Click below to check:</p>
-            <button class="btn primary-btn" onclick="licenseManager.manualCheck()">
-                I have purchased the gamepass
-            </button>
-        `;
-
-        const existing = statusElement.querySelector('.manual-check-container');
-        if (existing) {
-            existing.remove();
+    updateStatus(message, color, persistent = true) {
+        let statusElement = document.getElementById('status');
+        if (!statusElement) {
+            const container = document.getElementById('product-showcase');
+            if (!container) return;
+            statusElement = document.createElement('div');
+            statusElement.id = 'status';
+            statusElement.className = 'status-container';
+            container.appendChild(statusElement);
         }
 
-        statusElement.appendChild(manualContainer);
+        let messageZone = statusElement.querySelector('.status-messages');
+        if (!messageZone) {
+            messageZone = document.createElement('div');
+            messageZone.className = 'status-messages';
+            messageZone.setAttribute('aria-live','polite');
+            statusElement.appendChild(messageZone);
+        }
+
+        const statusClassMap = { green: 'status-success', red: 'status-error', orange: 'status-warning', blue: 'status-info', gray: 'status-info' };
+        const statusClass = statusClassMap[color] || 'status-info';
+
+        messageZone.innerHTML = `<div class="status-message ${statusClass}">${message}</div>`;
+        
+        if (persistent === false) {
+        } else if (/Verifying your purchase/i.test(message)) {
+        } else if (/Still not seeing a purchase|Make sure you completed the Robux purchase/i.test(message)) {
+        }
+        
+        statusElement.style.display = 'block';
     }
+
+    showExistingKeyOption(key, expiry) {
+        let statusElement = document.getElementById('status');
+
+        if (!statusElement) {
+            console.log('Status element not found in showExistingKeyOption, creating it...');
+            const container = document.getElementById('product-showcase');
+            if (container) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'status';
+                statusDiv.className = 'status-container';
+                statusDiv.style.display = 'none';
+                container.appendChild(statusDiv);
+                statusElement = statusDiv;
+            } else {
+                console.error('Could not find product-showcase container to create status element');
+                return;
+            }
+        }
+
+        const existing = document.getElementById('existing-key-reveal');
+        if (existing) existing.remove();
+        const wrap = document.createElement('div');
+        wrap.id = 'existing-key-reveal';
+        wrap.style.marginTop = '16px';
+        wrap.style.textAlign = 'center';
+        const safeKey = key.replace(/`/g, '\`');
+        const expiryHtml = expiry ? `<div style="margin-top:8px;font-size:0.75rem;color:#888">Expires: ${expiry}</div>` : '';
+        wrap.innerHTML = `
+            <button class="btn" style="background:#374151" onclick="(function(btn){
+                var kc=document.getElementById('keyContainer');
+                if(kc.getAttribute('data-shown')==='true'){ kc.scrollIntoView({behavior:'smooth'}); return; }
+                licenseManager.displayKey('${safeKey}');
+                btn.textContent='Key Shown';
+            })(this)">View Existing Key</button>
+            ${expiryHtml}
+        `;
+    }
+
 
     async manualCheck() {
-        const username = this.currentUsername || localStorage.getItem('pendingPurchaseUsername');
+        const username = this.currentUsername;
         if (!username) {
-            this.updateStatus('Error: No username found. Please refresh and try again.', 'red');
+            this.updateStatus('No username present. Refresh and try again.', 'red');
             return;
         }
-
-        const manualContainer = document.querySelector('.manual-check-container');
-        if (manualContainer) {
-            manualContainer.remove();
+        if (this.isCheckingPurchase) return;
+        this.isCheckingPurchase = true;
+        
+        const delaySeconds = 15;
+        for (let i = delaySeconds; i > 0; i--) {
+            this.updateStatus(`Waiting for Roblox to process your purchase... ${i} seconds`, 'blue', true);
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-
-        this.updateStatus('Checking your purchase...', 'gray');
-
+        
+        this.updateStatus('Verifying your purchase...', 'gray', true);
         try {
+            await this.startPurchaseSession(username).catch(()=>{});
             const response = await this.fetchGamepassCheck(username, true);
-            console.log('Manual check response:', response);
-
-            if (response.hasGamepass) {
-                if (response.keyIssued && response.key) {
-                    this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
-                    this.displayKey(response.key);
-                    this.trackSuccessfulPurchase(username);
-                } else {
-                    this.updateStatus('Purchase confirmed, but there was an issue with key generation.', 'red');
-                    this.displayRetryButton();
+            if (response.transactionId && this.checkTransactionClaimed(response.transactionId)) {
+                this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+                if (response.key) {
+                    this.showExistingKeyOption(response.key, response.expiryDate);
                 }
+                return;
+            }
+            if (response.needStart) {
+                await this.startPurchaseSession(username).catch(()=>{});
+                const retry = await this.fetchGamepassCheck(username, true);
+                if (retry.transactionId && this.checkTransactionClaimed(retry.transactionId)) {
+                    this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+                    if (retry.key) {
+                        this.showExistingKeyOption(retry.key, retry.expiryDate);
+                    }
+                    return;
+                }
+                this._handleManualCheckResponse(username, retry);
+                return;
+            }
+            this._handleManualCheckResponse(username, response);
+        } catch (e) {
+            console.error('Manual check error:', e);
+            this.updateStatus('Error checking purchase. Please try again in a moment.', 'red');
+        } finally {
+            this.isCheckingPurchase = false;
+        }
+    }
+
+    _handleManualCheckResponse(username, response){
+        if (!response) return;
+        if (!response.hasGamepass) {
+            if (response.hadPreviousKeys) {
+                this.showRepurchaseNeeded(response.priorKeyCount || 0);
             } else {
-                this.updateStatus('No purchase detected yet. Make sure you\'ve completed the purchase.', 'orange');
-                setTimeout(() => this.showManualCheckOption(), 3000);
-            }
-        } catch (error) {
-            console.error('Manual check error:', error);
-            this.updateStatus('Error checking purchase. Please try again.', 'red');
-            setTimeout(() => this.showManualCheckOption(), 2000);
-        }
-    }
-
-
-
-    async checkPendingPurchase() {
-        const pendingUsername = localStorage.getItem('pendingPurchaseUsername');
-        console.log('Checking for pending purchase, found username:', pendingUsername);
-        if (pendingUsername) {
-            console.log('Found pending purchase for username:', pendingUsername);
-            this.currentUsername = pendingUsername;
-
-            this.hideFormElements();
-            this.updateStatus('Checking for completed purchase...', 'blue');
-
-            try {
-                const response = await this.fetchGamepassCheck(pendingUsername, true);
-                console.log('Pending purchase check response:', response);
-
-                if (response.hasGamepass && response.keyIssued) {
-                    localStorage.removeItem('pendingPurchaseUsername');
-                    this.updateStatus('Purchase Completed!', 'green');
-                    this.displayKey(response.key);
-                    this.trackSuccessfulPurchase(pendingUsername);
-                } else if (!response.hasGamepass) {
-                    localStorage.removeItem('pendingPurchaseUsername');
-                    this.updateStatus('Gamepass not owned. Click below to purchase:', 'blue');
-                    this.showPurchaseButton();
-                } else {
-                    this.updateStatus('Purchase detected but key not ready. We\'ll keep checking...', 'orange');
-                    this.showManualCheckOption();
-                    await this.startPurchaseVerification(pendingUsername);
+                this.updateStatus('Still not seeing a purchase. Make sure you completed the Robux purchase. Roblox may take 10-30 seconds to register your purchase. Please wait and try again.', 'orange', false); 
+                
+                const purchaseContainer = document.querySelector('.purchase-container');
+                if (purchaseContainer) {
+                    const retryDiv = document.createElement('div');
+                    retryDiv.className = 'retry-container';
+                    retryDiv.style.marginTop = '16px';
+                    retryDiv.style.textAlign = 'center';
+                    purchaseContainer.appendChild(retryDiv);
                 }
-            } catch (error) {
-                console.error('Error checking pending purchase:', error);
-                this.updateStatus('Error checking purchase status. Please try manually.', 'red');
-                this.showManualCheckOption();
+            }
+            return;
+        }
+        if (response.transactionId && this.checkTransactionClaimed(response.transactionId)) {
+            this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
+            if (response.key) {
+                this.showExistingKeyOption(response.key, response.expiryDate);
+            }
+            return;
+        }
+        if (response.keyIssued && response.key) {
+            this.updateStatus('Purchase confirmed! Here\'s your key:', 'green');
+            this.displayKey(response.key);
+            this.trackSuccessfulPurchase(username, response.transactionId);
+        } else {
+            this.updateStatus('Purchase confirmed, but key generation failed.', 'red');
+            this.displayRetryButton();
+        }
+    }
+
+
+
+    trackSuccessfulPurchase(username, transactionId) {
+        const purchaseKey = `purchase_${this.product.id}_${username}`;
+        localStorage.setItem(purchaseKey, JSON.stringify({
+            keyIssued: true,
+            timestamp: Date.now(),
+            transactionId: transactionId
+        }));
+        
+        if (transactionId) {
+            const claimedTransactions = JSON.parse(localStorage.getItem('claimed_transactions') || '[]');
+            if (!claimedTransactions.includes(transactionId)) {
+                claimedTransactions.push(transactionId);
+                localStorage.setItem('claimed_transactions', JSON.stringify(claimedTransactions));
             }
         }
     }
 
-    trackSuccessfulPurchase(username) {
-        console.log(`Purchase completed successfully for user: ${username}`);
-        localStorage.removeItem('pendingPurchaseUsername');
-    }
-
-    clearPendingState() {
-        localStorage.removeItem('pendingPurchaseUsername');
-        console.log('Cleared pending purchase state');
-        window.location.reload();
-    }
-
-    showPurchaseButton() {
-        const statusElement = document.getElementById('status');
-
-        const existingButton = statusElement.querySelector('.purchase-redirect-btn');
-        if (existingButton) {
-            existingButton.remove();
+    showPurchasePrompt() {
+        let statusElement = document.getElementById('status');
+        if (!statusElement) {
+            const container = document.getElementById('product-showcase');
+            if (!container) return;
+            statusElement = document.createElement('div');
+            statusElement.id = 'status';
+            statusElement.className = 'status-container';
+            container.appendChild(statusElement);
         }
+        statusElement.innerHTML = '';
 
-        const purchaseContainer = document.createElement('div');
-        purchaseContainer.className = 'purchase-redirect-container';
-        purchaseContainer.style.marginTop = '20px';
-        purchaseContainer.style.textAlign = 'center';
+        const actionsWrapper = document.createElement('div');
+        actionsWrapper.className = 'actions-grid';
+        actionsWrapper.style.display = 'flex';
+        actionsWrapper.style.flexDirection = 'column';
+        actionsWrapper.style.gap = '18px';
 
-        purchaseContainer.innerHTML = `
-            <p style="margin-bottom: 15px; color: #666;">You need to purchase the gamepass first:</p>
-            <button class="btn primary-btn purchase-redirect-btn" onclick="licenseManager.redirectToPurchase()">
+        const purchaseDiv = document.createElement('div');
+        purchaseDiv.className = 'purchase-redirect-container action-card';
+        purchaseDiv.style.textAlign = 'center';
+        purchaseDiv.innerHTML = `
+            <h3 style="margin:0 0 8px 0;font-size:1rem;color:#fff;">Step 1: Purchase</h3>
+            <p style="margin:0 0 14px 0; color:#cbd5e1;font-size:0.85rem;">Buy the required gamepass to generate your license key.</p>
+            <button class="btn primary-btn" onclick="licenseManager.redirectToPurchase()">
                 <span class="btn-text">Purchase ${this.product.name}</span>
                 <span class="btn-icon">🛒</span>
             </button>
-            <p style="margin-top: 10px; font-size: 0.9rem; color: #888;">
-                After purchasing, return to this page and we'll detect your purchase automatically.
-            </p>
         `;
 
-        statusElement.appendChild(purchaseContainer);
-    }
+        actionsWrapper.appendChild(purchaseDiv);
+        statusElement.appendChild(actionsWrapper);
+        this.showManualCheckButton(actionsWrapper);
 
-    showPendingPurchaseOption(username) {
-        const statusElement = document.getElementById('status');
-        statusElement.innerHTML = `
-            <div class="pending-purchase-notice" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin: 0 0 10px 0; color: #856404;">⏳ Pending Purchase Detected</h3>
-                <p style="margin: 0 0 15px 0; color: #856404;">
-                    We found a pending purchase for username: <strong>${username}</strong>
-                </p>
-                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn primary-btn" onclick="licenseManager.checkPendingPurchase()">
-                        Check if Purchase Completed
-                    </button>
-                    <button class="btn secondary-btn" onclick="licenseManager.clearPendingState()">
-                        Start Fresh
-                    </button>
-                </div>
-            </div>
-        `;
+        const messageZone = document.createElement('div');
+        messageZone.className = 'status-messages';
+        messageZone.setAttribute('aria-live','polite');
+        messageZone.style.marginTop = '4px';
+        statusElement.appendChild(messageZone);
+
+        statusElement.style.display = 'block';
+        this.state = 'prompting';
     }
 
     redirectToPurchase() {
-        if (this.product.gamepassUrl) {
-            console.log('Opening gamepass URL:', this.product.gamepassUrl);
-            const newWindow = window.open(this.product.gamepassUrl, '_blank');
-
-            if (newWindow) {
-                this.updateStatus('Please complete your purchase in the new tab, then return here.', 'orange');
-                const username = this.currentUsername || document.getElementById('username').value.trim();
-                if (username) {
-                    localStorage.setItem('pendingPurchaseUsername', username);
-                    this.currentUsername = username;
-                    this.startPurchaseVerification(username);
-                }
-            } else {
-                this.updateStatus('Popup blocked! Please copy this URL and open it manually:', 'orange');
-                const statusElement = document.getElementById('status');
-                const urlContainer = document.createElement('div');
-                urlContainer.style.marginTop = '10px';
-                urlContainer.innerHTML = `
-                    <input type="text" value="${this.product.gamepassUrl}" readonly style="width: 100%; padding: 8px; margin: 5px 0;">
+        if (!this.product || !this.product.gamepassUrl) {
+            this.updateStatus('Gamepass URL not configured.', 'red');
+            return;
+        }
+        const win = window.open(this.product.gamepassUrl, '_blank');
+        if (win) {
+            this.updateStatus('After completing the purchase, return here and click the verification button.', 'orange');
+        } else {
+            this.updateStatus('Popup blocked! Copy the URL below and open it manually.', 'orange');
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                const urlDiv = document.createElement('div');
+                urlDiv.style.marginTop = '10px';
+                urlDiv.innerHTML = `
+                    <input type="text" value="${this.product.gamepassUrl}" readonly style="width:100%;padding:8px;margin:6px 0;">
                     <button class="btn secondary-btn" onclick="navigator.clipboard.writeText('${this.product.gamepassUrl}')">Copy URL</button>
                 `;
-                statusElement.appendChild(urlContainer);
+                statusElement.appendChild(urlDiv);
             }
-        } else {
-            console.error('No gamepass URL found for product:', this.product);
-            alert('Error: Gamepass URL not found. Please contact support.');
         }
     }
 
@@ -857,41 +911,47 @@ class LicenseManager {
         this.updateStatus(`Error: ${error.message}`, 'red');
         this.displayRetryButton();
     }
+
+    async startPurchaseSession(username){
+        if (!this.product || !this.product.id) return;
+        const headers = { 'Content-Type': 'application/json' };
+        const body = { roblox_username: username, product_id: this.product.id };
+        let resp;
+        try {
+            resp = await fetch('/start-purchase', {
+                method: 'POST',
+                credentials: 'include',
+                headers,
+                body: JSON.stringify(body)
+            });
+        } catch(e){
+            throw new Error('Network');
+        }
+        if (resp.status === 401) throw new Error('AUTH');
+        if (!resp.ok) throw new Error('Failed to start');
+        return resp.json();
+    }
 }
 
 function copyKey() {
-    const keyElement = document.getElementById('key');
-
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(keyElement.value).then(() => {
-            showCopySuccess();
-        }).catch(() => {
-            fallbackCopy();
-        });
-    } else {
-        fallbackCopy();
-    }
-
-    function fallbackCopy() {
-        keyElement.select();
-        keyElement.setSelectionRange(0, 99999);
-        try {
-            document.execCommand('copy');
-            showCopySuccess();
-        } catch (err) {
-            console.error('Copy failed:', err);
-        }
-    }
-
-    function showCopySuccess() {
+    const keyDisplay = document.getElementById('key-display');
+    if (!keyDisplay) return;
+    const text = keyDisplay.textContent.trim();
+    const doSuccess = () => {
         const copyBtn = document.querySelector('.copy-btn');
-        const originalText = copyBtn.innerText;
+        if (!copyBtn) return;
+        const original = copyBtn.innerText;
         copyBtn.innerText = 'Copied!';
-        copyBtn.style.backgroundColor = '#28a745';
-        setTimeout(() => {
-            copyBtn.innerText = originalText;
-            copyBtn.style.backgroundColor = '';
-        }, 2000);
+        copyBtn.style.backgroundColor = '#16a34a';
+        setTimeout(()=>{ copyBtn.innerText = original; copyBtn.style.backgroundColor=''; },1500);
+    };
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(doSuccess).catch(()=>{
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); doSuccess();
+            } catch(e) { console.error('Copy failed', e); }
+        });
     }
 }
 
@@ -901,6 +961,6 @@ function validatePurchase() {
     licenseManager.validatePurchase();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    licenseManager = new LicenseManager();
-});
+document.addEventListener('DOMContentLoaded', () => { licenseManager = new LicenseManager(); });
+
+function validatePurchase() { licenseManager.validatePurchase(); }
