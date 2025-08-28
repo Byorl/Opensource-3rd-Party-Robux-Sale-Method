@@ -936,6 +936,37 @@ app.config.update(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
+def utc_now_iso():
+    """Return UTC timestamp string in strict Z form without offset duplication.
+    Always like 2025-08-28T19:23:41.123456Z (no +00:00 then Z).
+    """
+    return datetime.utcnow().isoformat() + 'Z'
+
+def parse_ts(ts: str):
+    """Parse a stored ISO8601 timestamp (possibly with +00:00Z bug) into a naive UTC datetime.
+
+    Normalizes:
+      - '2025-08-28T17:23:41.362992+00:00Z' -> naive 2025-08-28T17:23:41.362992
+      - '2025-08-28T17:23:41.362992Z' -> naive
+      - '2025-08-28T17:23:41.362992' -> naive
+    Returns None if unparsable.
+    """
+    if not ts or not isinstance(ts, str):
+        return None
+    t = ts.strip()
+    if t.endswith('Z'):
+        t = t[:-1]
+    try:
+        dt = datetime.fromisoformat(t)
+    except Exception:
+        return None
+    if dt.tzinfo:
+        try:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except Exception:
+            dt = dt.replace(tzinfo=None)
+    return dt
+
 user_locks = {}
 lock_manager_lock = threading.Lock()
 rate_limit_cache = {}
@@ -1224,7 +1255,7 @@ class AccountManager:
             if 'pending_purchases' not in acct or not isinstance(acct['pending_purchases'], dict):
                 acct['pending_purchases'] = {}
             key = f"{product_id}::{roblox_username.lower()}"
-            started_at = datetime.now(timezone.utc).isoformat() + 'Z'
+            started_at = utc_now_iso()
             acct['pending_purchases'][key] = {'started_at': started_at}
             logger.info(f"Set pending purchase user={user_id} product={product_id} username={roblox_username} started_at={started_at}")
             saved = self.save_accounts(accounts)
@@ -1902,17 +1933,14 @@ def check_gamepass():
             pending_info = account_manager.get_pending_purchase(authenticated_user['user_id'], username, product_id)
             logger.info(f"/check-gamepass pending lookup user={authenticated_user['user_id']} product={product_id} username={username} found={bool(pending_info)} info={pending_info}")
         else:
-            pending_info = {'started_at': datetime.now(timezone.utc).isoformat() + 'Z', 'guest': True}
+            pending_info = {'started_at': utc_now_iso(), 'guest': True}
         pending_started_dt = None
         if not pending_info:
             if authenticated_user:
                 return jsonify({'hasGamepass': False, 'needStart': True, 'message': 'Start a purchase first.'})
             else:
-                pending_info = {'started_at': datetime.now(timezone.utc).isoformat() + 'Z', 'guest': True}
-        try:
-            pending_started_dt = datetime.fromisoformat(pending_info['started_at'].replace('Z','')) if pending_info.get('started_at') else None
-        except Exception:
-            pending_started_dt = None
+                pending_info = {'started_at': utc_now_iso(), 'guest': True}
+        pending_started_dt = parse_ts(pending_info.get('started_at'))
         if authenticated_user and pending_started_dt and (datetime.utcnow() - pending_started_dt).total_seconds() > PENDING_PURCHASE_EXPIRY_SECONDS:
             try:
                 account_manager.pop_pending_purchase(authenticated_user['user_id'], username, product_id)
@@ -2036,7 +2064,7 @@ def check_gamepass():
                 t_created = k.get('transaction_created') or k.get('issued_at') or k.get('expiry_date')
                 if not t_created: continue
                 try:
-                    dt = datetime.fromisoformat(t_created.replace('Z',''))
+                    dt = parse_ts(t_created)
                     if (last_issued_dt is None) or dt > last_issued_dt:
                         last_issued_dt = dt
                 except Exception:
@@ -2069,9 +2097,8 @@ def check_gamepass():
             if any(k.get('transaction_id') == tx_id for k in existing_product_record['keys']):
                 logger.info(f"Skip tx {tx_id} already has key issued")
                 continue
-            try:
-                tx_created_dt = datetime.fromisoformat(tx_created_raw.replace('Z',''))
-            except Exception:
+            tx_created_dt = parse_ts(tx_created_raw)
+            if not tx_created_dt:
                 logger.info(f"Skip tx {tx_id} invalid created format")
                 continue
             if last_issued_dt and tx_created_dt <= last_issued_dt:
