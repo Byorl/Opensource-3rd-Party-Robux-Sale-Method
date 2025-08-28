@@ -13,6 +13,7 @@ class LicenseManager {
         this.rateLimitCache = new Map();
         this.purchaseAttempts = new Map();
         this.state = 'idle';
+    this.pendingSession = null; 
 
         this.init();
     }
@@ -395,7 +396,7 @@ class LicenseManager {
         this.showPurchasePrompt(); 
         
         try { 
-            await this.startPurchaseSession(username); 
+            await this.startPurchaseSession(username);
             this.updateStatus('Ready for purchase verification. Buy the gamepass, then click the "I Have Purchased The Gamepass" button below.', 'blue', true);
             const purchaseContainer = document.querySelector('.purchase-container');
             if (purchaseContainer) {
@@ -535,6 +536,9 @@ class LicenseManager {
 
                 if (response.status === 429) {
                     const body = await response.json().catch(()=>({}));
+                    if (body && body.retryAfter) {
+                        this.beginRetryCountdown(body.retryAfter);
+                    }
                     return body;
                 }
 
@@ -750,7 +754,9 @@ class LicenseManager {
         
         this.updateStatus('Verifying your purchase...', 'gray', true);
         try {
-            await this.startPurchaseSession(username).catch(()=>{});
+            if (!this.pendingSession || this.pendingSession.username.toLowerCase() !== username.toLowerCase()) {
+                await this.startPurchaseSession(username).catch(()=>{});
+            }
             const response = await this.fetchGamepassCheck(username, true);
             if (response.transactionId && this.checkTransactionClaimed(response.transactionId)) {
                 this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
@@ -760,7 +766,9 @@ class LicenseManager {
                 return;
             }
             if (response.needStart) {
-                await this.startPurchaseSession(username).catch(()=>{});
+                if (!this.pendingSession || this.pendingSession.username.toLowerCase() !== username.toLowerCase()) {
+                    await this.startPurchaseSession(username).catch(()=>{});
+                }
                 const retry = await this.fetchGamepassCheck(username, true);
                 if (retry.transactionId && this.checkTransactionClaimed(retry.transactionId)) {
                     this.updateStatus('This purchase has already been claimed. Please check your purchase history.', 'orange');
@@ -915,6 +923,9 @@ class LicenseManager {
 
     async startPurchaseSession(username){
         if (!this.product || !this.product.id) return;
+        if (this.pendingSession && this.pendingSession.username.toLowerCase() === username.toLowerCase() && this.pendingSession.productId === this.product.id) {
+            return { started: true, started_at: this.pendingSession.started_at, reused: true };
+        }
         const headers = { 'Content-Type': 'application/json' };
         const body = { roblox_username: username, product_id: this.product.id };
         let resp;
@@ -930,7 +941,30 @@ class LicenseManager {
         }
         if (resp.status === 401) throw new Error('AUTH');
         if (!resp.ok) throw new Error('Failed to start');
-        return resp.json();
+        const js = await resp.json();
+        if (js && js.started_at) {
+            this.pendingSession = { username, productId: this.product.id, started_at: js.started_at };
+        }
+        return js;
+    }
+
+    beginRetryCountdown(seconds){
+        const btn = document.querySelector('.manual-check-container button');
+        if (!btn) return;
+        let remaining = Math.ceil(seconds);
+        const original = btn.textContent;
+        btn.disabled = true;
+        const tick = ()=>{
+            if (remaining <= 0) {
+                btn.disabled = false;
+                btn.textContent = original;
+                return;
+            }
+            btn.textContent = original + ` (${remaining}s)`;
+            remaining -= 1;
+            setTimeout(tick,1000);
+        };
+        tick();
     }
 }
 
