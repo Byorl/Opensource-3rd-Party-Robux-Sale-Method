@@ -30,6 +30,8 @@ ADMIN_CONFIG = {}
 SETTINGS = {}
 SUPPORTED_GAMEPASSES = []
 PENDING_PURCHASE_EXPIRY_SECONDS = 3600  
+PRE_START_GRACE_SECONDS = 300  
+CHECK_GAMEPASS_COOLDOWN_SECONDS = 3 
 _products_config_mtime = None
 _products_config_lock = threading.Lock()
 _last_forced_push_time = 0  
@@ -1207,7 +1209,7 @@ class AccountManager:
             accounts = self.load_accounts()
             if user_id in accounts:
                 user_data = accounts[user_id].copy()
-                del user_data['password_hash']
+                user_data.pop('password_hash', None)
                 user_data['user_id'] = user_id
                 return user_data
         except Exception as e:
@@ -1255,9 +1257,13 @@ class AccountManager:
             if 'pending_purchases' not in acct or not isinstance(acct['pending_purchases'], dict):
                 acct['pending_purchases'] = {}
             key = f"{product_id}::{roblox_username.lower()}"
-            started_at = utc_now_iso()
-            acct['pending_purchases'][key] = {'started_at': started_at}
-            logger.info(f"Set pending purchase user={user_id} product={product_id} username={roblox_username} started_at={started_at}")
+            if key in acct['pending_purchases'] and isinstance(acct['pending_purchases'][key], dict):
+                existing_started = acct['pending_purchases'][key].get('started_at')
+                logger.info(f"Reuse existing pending purchase user={user_id} product={product_id} username={roblox_username} started_at={existing_started}")
+            else:
+                started_at = utc_now_iso()
+                acct['pending_purchases'][key] = {'started_at': started_at}
+                logger.info(f"Set pending purchase user={user_id} product={product_id} username={roblox_username} started_at={started_at}")
             saved = self.save_accounts(accounts)
             return (True, None) if saved else (False, 'Save failed')
         except Exception as e:
@@ -1940,6 +1946,15 @@ def check_gamepass():
                     break
         if not product_id:
             return jsonify({'error': f'Gamepass {gamepass_id} is not supported'}), 400
+        _cool_key = (username.lower(), product_id)
+        _now_ts = time.time()
+        if not hasattr(check_gamepass, '_recent_checks'):
+            check_gamepass._recent_checks = {}
+        last_ts = check_gamepass._recent_checks.get(_cool_key)
+        if last_ts and (_now_ts - last_ts) < CHECK_GAMEPASS_COOLDOWN_SECONDS:
+            retry_after = max(0, CHECK_GAMEPASS_COOLDOWN_SECONDS - (_now_ts - last_ts))
+            return jsonify({'status':'Rate Limited','message':f'Please wait {retry_after:.1f}s before checking again.','shouldRetry':True,'retryAfter':round(retry_after,1)}), 429
+        check_gamepass._recent_checks[_cool_key] = _now_ts
         product = PRODUCTS_CONFIG[product_id]
         user_id, user_error = fetch_user_id(username)
         if user_id is None or user_error:
@@ -2124,6 +2139,13 @@ def check_gamepass():
             if not tx_created_dt:
                 logger.info(f"Skip tx {tx_id} invalid created format")
                 continue
+            if pending_started_dt and tx_created_dt < pending_started_dt:
+                delta_sec = (pending_started_dt - tx_created_dt).total_seconds()
+                if delta_sec <= PRE_START_GRACE_SECONDS:
+                    logger.info(f"Accept tx {tx_id} within pre-start grace ({delta_sec:.1f}s before pending start)")
+                else:
+                    logger.info(f"Skip tx {tx_id}: {delta_sec:.1f}s before pending start (exceeds grace {PRE_START_GRACE_SECONDS}s)")
+                    continue
             if last_issued_dt and tx_created_dt <= last_issued_dt:
                 allow_same_ts = False
                 if pending_started_dt and tx_created_dt >= last_issued_dt and tx_id not in claimed_set:
