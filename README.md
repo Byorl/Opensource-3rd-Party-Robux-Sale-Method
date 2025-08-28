@@ -1,4 +1,4 @@
-# Roblox Gamepass → License Key Store (Simplified Guide)
+# Roblox Gamepass → License Key Store
 
 Sell time‑limited license keys automatically when someone buys a Roblox Gamepass.
 
