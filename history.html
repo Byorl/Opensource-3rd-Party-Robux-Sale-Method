@@ -112,14 +112,11 @@
         }
 
         .back-link {
-            color: #a1a1aa;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
+            text-decoration:none; font-size:0.8rem; font-weight:500; padding:0.5rem 1rem; border-radius:8px; background:rgba(99,102,241,0.12); color:#6366f1; border:1px solid rgba(99,102,241,0.3); transition:.2s; display:inline-block;
         }
 
         .back-link:hover {
-            color: #6366f1;
+            background:rgba(99,102,241,0.2); color:#ffffff; border-color:rgba(99,102,241,0.5);
         }
 
         .container {
@@ -414,271 +411,82 @@
     <div class="container">
         <div class="page-header">
             <h1>Purchase History</h1>
-            <p>View and manage your license purchases</p>
+            <p>Browse, search, and manage your keys.</p>
         </div>
-                <div class="history-container">
-                    <div id="loading" class="loading-container">
-                        <div class="loading-spinner"></div>
-                        <p>Loading your purchase history...</p>
+        <div id="not-logged-in" class="empty-state" style="display:none; max-width:640px; margin:0 auto;">
+            <h3>Not Logged In</h3>
+            <p>Please log in to view your purchase history.</p>
+            <a href="auth.html" class="btn" style="margin-top:1rem;">Login →</a>
+        </div>
+        <div id="history-app" style="display:none;">
+            <section id="userSummary" class="user-info compact">
+                <div class="summary-main">
+                    <div class="summary-user">
+                        <h2 id="username" class="username"></h2>
+                        <p id="member-since" class="member-since"></p>
                     </div>
-                    
-                    <div id="content" style="display: none;">
-                        <div class="user-info">
-                            <h2 id="username"></h2>
-                            <p id="member-since"></p>
-                            <div class="user-stats">
-                                <div class="stat-item">
-                                    <div class="stat-value" id="total-purchases">0</div>
-                                    <div class="stat-label">Total Purchases</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-value" id="total-spent">0</div>
-                                    <div class="stat-label">Robux Spent</div>
-                                </div>
-                            </div>
-                            <button class="logout-btn" onclick="logout()">Logout</button>
+                    <div class="summary-stats">
+                        <div class="stat-block">
+                            <div class="stat-value" id="total-purchases">0</div>
+                            <div class="stat-label">Purchases</div>
                         </div>
-                        
-                    <div id="purchases-container"></div>
+                        <div class="stat-block">
+                            <div class="stat-value" id="total-spent">0</div>
+                            <div class="stat-label">Robux</div>
+                        </div>
+                    </div>
+                    <div class="summary-actions">
+                        <button class="logout-btn" id="logout-btn">Logout</button>
+                    </div>
                 </div>
-                    
-            <div id="not-logged-in" style="display: none;">
-                <div class="empty-state">
-                    <h3>Not Logged In</h3>
-                    <p>Please log in to view your purchase history.</p>
-                    <a href="auth.html" class="btn" style="margin-top: 1rem;">
-                        Login →
-                    </a>
+                <div class="summary-filters">
+                    <input id="searchBox" type="text" placeholder="Search product, key, username..." aria-label="Search purchases" />
+                    <select id="sortSelect" aria-label="Sort purchases">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="product">Product Name</option>
+                        <option value="price">Price High → Low</option>
+                    </select>
+                    <select id="viewMode" aria-label="View mode">
+                        <option value="grid">Grid</option>
+                        <option value="list">List</option>
+                    </select>
+                </div>
+            </section>
+
+            <div id="loading" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Loading your purchase history...</p>
+            </div>
+
+            <div id="purchasesSection" style="display:none;">
+                <div id="purchases-container" class="purchases-grid" aria-live="polite"></div>
+                <div id="emptyState" class="empty-state" style="display:none;">
+                    <h3>No Purchases Found</h3>
+                    <p id="emptyStateMsg">Your purchase history will appear here after you buy a license.</p>
+                    <a href="index.html" class="btn" style="margin-top:1rem;">Browse Products →</a>
+                </div>
+                <div class="pagination" id="pagination" style="display:none;">
+                    <button id="prevPage" class="page-btn" disabled>Prev</button>
+                    <span id="pageInfo" class="page-info"></span>
+                    <button id="nextPage" class="page-btn" disabled>Next</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        function makeAuthenticatedRequest(url, options = {}) {
-            const defaultOptions = {
-                credentials: 'include',
-                ...options
-            };
-            
-            const authToken = localStorage.getItem('auth_token');
-            if (authToken) {
-                defaultOptions.headers = {
-                    ...defaultOptions.headers,
-                    'Authorization': `Bearer ${authToken}`
-                };
-            }
-            
-            console.log('Making authenticated request to:', url);
-            console.log('Request options:', defaultOptions);
-            
-            return fetch(url, defaultOptions);
-        }
-
-        async function checkAuth() {
-            const storedUser = localStorage.getItem('user_data');
-            let cachedUser = null;
-            if (storedUser) {
-                try {
-                    cachedUser = JSON.parse(storedUser);
-                } catch (e) {
-                    localStorage.removeItem('user_data');
-                    localStorage.removeItem('auth_token');
-                }
-            }
-
-            try {
-                const response = await makeAuthenticatedRequest('http://localhost:5000/me');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.authenticated) {
-                        localStorage.setItem('user_data', JSON.stringify(data.user));
-                        return data.user;
-                    }
-                }
-                
-                console.log('Server authentication failed, clearing cached data');
-                localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
-                return null;
-                
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                console.log('Network error during auth check, clearing cached data');
-                localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
-                return null;
-            }
-        }
-        
-        async function loadPurchaseHistory() {
-            try {
-                const response = await makeAuthenticatedRequest('http://localhost:5000/purchase-history');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    return data.purchases || [];
-                } else if (response.status === 401) {
-                    console.error('Authentication failed for purchase history');
-                    localStorage.removeItem('user_data');
-                    localStorage.removeItem('auth_token');
-                    return [];
-                } else {
-                    console.error('Failed to load purchase history:', response.status, response.statusText);
-                    return [];
-                }
-            } catch (error) {
-                console.error('Failed to load purchase history:', error);
-                return [];
-            }
-        }
-        
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-        
-        function copyKey(key) {
-            navigator.clipboard.writeText(key).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                btn.style.background = 'var(--success)';
-                
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.style.background = 'var(--primary)';
-                }, 2000);
-            }).catch(() => {
-                alert('Failed to copy key');
-            });
-        }
-        
-        function renderPurchases(purchases) {
-            const container = document.getElementById('purchases-container');
-            
-            if (purchases.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No Purchases Yet</h3>
-                        <p>Your purchase history will appear here after you buy a license.</p>
-                        <a href="index.html" class="btn" style="margin-top: 1rem;">
-                            Browse Products →
-                        </a>
-                    </div>
-                `;
-                return;
-            }
-            
-            const purchasesHtml = purchases.map(purchase => `
-                <div class="purchase-item">
-                    <div class="purchase-header">
-                        <div class="purchase-info">
-                            <h3>${purchase.product_name}</h3>
-                            <div class="purchase-date">${formatDate(purchase.purchase_date)}</div>
-                        </div>
-                        <div class="purchase-price">
-                            <img src="icon/Robux.svg" alt="Robux" class="robux-icon" style="width: 16px; height: 16px;">
-                            ${purchase.price}
-                        </div>
-                    </div>
-                    
-                    <div class="purchase-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Roblox Username</div>
-                            <div class="detail-value">${purchase.roblox_username}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Purchase ID</div>
-                            <div class="detail-value">${purchase.purchase_id}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">License Key</div>
-                        <div class="key-display">
-                            ${purchase.key}
-                            <button class="copy-key-btn" onclick="copyKey('${purchase.key}')">Copy</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-            
-            container.innerHTML = purchasesHtml;
-        }
-        
-        async function logout() {
-            try {
-                await makeAuthenticatedRequest('http://localhost:5000/logout', {
-                    method: 'POST'
-                });
-                localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
-                window.location.href = 'index.html';
-            } catch (error) {
-                console.error('Logout failed:', error);
-                localStorage.removeItem('user_data');
-                localStorage.removeItem('auth_token');
-                window.location.href = 'index.html';
-            }
-        }
-        
-        async function init() {
-            const user = await checkAuth();
-            
-            if (!user) {
-                if (window.location.pathname.includes('history.html')) {
-                    window.location.href = 'index.html';
-                    return;
-                }
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('not-logged-in').style.display = 'block';
-                return;
-            }
-            
-            document.getElementById('username').textContent = user.username;
-            document.getElementById('member-since').textContent = `Member since ${formatDate(user.created_at)}`;
-            document.getElementById('total-purchases').textContent = user.total_purchases || 0;
-            
-            const purchases = await loadPurchaseHistory();
-            
-            const totalSpent = purchases.reduce((sum, purchase) => sum + (purchase.price || 0), 0);
-            document.getElementById('total-spent').textContent = totalSpent;
-            
-            renderPurchases(purchases);
-            
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('content').style.display = 'block';
-        }
-        
-        function setupBackNavigation() {
-            const backLink = document.getElementById('back-link');
-            const referrer = document.referrer;
-            
-            if (referrer && (referrer.includes('license.html') || referrer.includes('product.html'))) {
-                backLink.href = referrer;
-                if (referrer.includes('license.html')) {
-                    backLink.textContent = '← Back to License';
-                } else if (referrer.includes('product.html')) {
-                    backLink.textContent = '← Back to Product';
-                }
-            } else {
-                backLink.href = 'index.html';
-                backLink.textContent = '← Back to Store';
-            }
-        }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            setupBackNavigation();
-            init();
-        });
-    </script>
+    <script src="js/history.js"></script>
 </body>
+    <script>
+        (async function(){
+            try{
+                const res = await fetch('config/products.json');
+                const cfg = await res.json();
+                const mainName = (cfg.website && cfg.website.name) || (cfg.mainProducts && cfg.mainProducts[0] && cfg.mainProducts[0].name) || cfg.site_name;
+                document.title = `${mainName} - Purchase History`;
+                const logoSpans = document.querySelectorAll('.logo span');
+                logoSpans.forEach(s => s.textContent = mainName);
+            }catch(e){}
+        })();
+    </script>
 </html>
