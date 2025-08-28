@@ -68,8 +68,8 @@ pre { background:#11141d; padding:1rem; border-radius:8px; max-height:400px; ove
       <button id="admin-logout-btn" style="background:#272b37;border:1px solid rgba(255,255,255,.18);">Logout</button>
     </div>
   </div>
-  <div class="split">
-    <div class="card" id="accounts-section" style="min-height:500px;display:flex;flex-direction:column;">
+  <div class="split" style="grid-template-columns:1fr;">
+    <div class="card" id="accounts-section" style="min-height:560px;display:flex;flex-direction:column;">
       <div class="table-wrapper">
         <table id="accounts-table">
           <thead>
@@ -86,22 +86,30 @@ pre { background:#11141d; padding:1rem; border-radius:8px; max-height:400px; ove
         </table>
       </div>
     </div>
-    <div class="card" id="detail-section" style="display:flex;flex-direction:column;min-height:400px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.75rem;flex-wrap:wrap;">
-        <h3 style="margin:0;font-size:1rem;letter-spacing:.5px;">Account Detail</h3>
-        <div id="detail-meta-actions" style="display:none;gap:.4rem;align-items:center;">
-          <button id="detail-refresh" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.65rem;padding:.45rem .7rem;">Refresh</button>
-          <button id="open-purchases" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.65rem;padding:.45rem .7rem;">Purchases</button>
-          <button id="detail-close" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.65rem;padding:.45rem .7rem;">Clear</button>
-        </div>
+  </div>
+</div>
+<!-- Slide-out drawer -->
+<div id="account-drawer" class="hidden" style="position:fixed;top:0;right:0;height:100%;width:500px;max-width:92%;background:#0e1117;border-left:1px solid #232735;box-shadow:-8px 0 24px -6px rgba(0,0,0,.6);display:flex;flex-direction:column;z-index:1600;transform:translateX(0);">
+  <div style="padding:1rem 1.15rem .85rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);gap:.75rem;flex-wrap:wrap;">
+    <h3 id="drawer-title" style="margin:0;font-size:1rem;letter-spacing:.5px;">Account</h3>
+    <div style="display:flex;gap:.45rem;">
+      <button id="drawer-purchases-btn" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.6rem;padding:.45rem .65rem;">Purchases</button>
+      <button id="drawer-close" style="background:#272b37;border:1px solid rgba(255,255,255,.15);font-size:.6rem;padding:.45rem .65rem;">Close</button>
+    </div>
+  </div>
+  <div id="drawer-body" style="padding:1rem 1.15rem;overflow:auto;flex:1;display:flex;flex-direction:column;gap:1rem;">
+    <div id="drawer-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.55rem;font-size:.58rem;"></div>
+    <div id="drawer-recent" style="display:flex;flex-direction:column;gap:.45rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:.55rem;text-transform:uppercase;letter-spacing:.5px;opacity:.65;">Recent Purchases</div>
+        <div id="drawer-recent-count" style="font-size:.55rem;color:#6366f1;font-weight:600;"></div>
       </div>
-      <div id="detail-placeholder" style="font-size:0.75rem;color:#a1a1aa;">Select an account to view details...</div>
-      <div id="detail-content" class="hidden" style="display:flex;flex-direction:column;gap:.9rem;flex:1;min-height:0;">
-        <div id="detail-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;font-size:.65rem;"></div>
-      </div>
+      <div id="drawer-recent-list" style="display:flex;flex-direction:column;gap:.4rem;"></div>
+      <button id="drawer-view-all" class="hidden" style="align-self:flex-start;background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.55rem;padding:.4rem .55rem;">Open Full History</button>
     </div>
   </div>
 </div>
+<div id="drawer-backdrop" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);z-index:1500;"></div>
 <div id="purchases-modal" class="hidden" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:2000;">
   <div style="width:920px;max-width:92%;background:#0f1117;border:1px solid #262a37;border-radius:14px;padding:1.25rem;display:flex;flex-direction:column;max-height:86vh;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.9rem;flex-wrap:wrap;">
