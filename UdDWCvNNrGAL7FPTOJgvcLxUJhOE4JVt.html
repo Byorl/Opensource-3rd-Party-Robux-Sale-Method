@@ -69,7 +69,7 @@ pre { background:#11141d; padding:1rem; border-radius:8px; max-height:400px; ove
     </div>
   </div>
   <div class="split">
-    <div class="card" id="accounts-section">
+    <div class="card" id="accounts-section" style="min-height:500px;display:flex;flex-direction:column;">
       <div class="table-wrapper">
         <table id="accounts-table">
           <thead>
@@ -91,35 +91,33 @@ pre { background:#11141d; padding:1rem; border-radius:8px; max-height:400px; ove
         <h3 style="margin:0;font-size:1rem;letter-spacing:.5px;">Account Detail</h3>
         <div id="detail-meta-actions" style="display:none;gap:.4rem;align-items:center;">
           <button id="detail-refresh" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.65rem;padding:.45rem .7rem;">Refresh</button>
+          <button id="open-purchases" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.65rem;padding:.45rem .7rem;">Purchases</button>
           <button id="detail-close" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.65rem;padding:.45rem .7rem;">Clear</button>
         </div>
       </div>
       <div id="detail-placeholder" style="font-size:0.75rem;color:#a1a1aa;">Select an account to view details...</div>
       <div id="detail-content" class="hidden" style="display:flex;flex-direction:column;gap:.9rem;flex:1;min-height:0;">
-        <div id="detail-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;font-size:.65rem;"></div>
-        <div id="detail-purchases-wrapper" style="flex:1;min-height:0;display:flex;flex-direction:column;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-            <div style="font-size:.65rem;letter-spacing:.5px;text-transform:uppercase;color:#a1a1aa;">Purchase History</div>
-            <div id="detail-purchase-count" style="font-size:.6rem;color:#6366f1;font-weight:600;"></div>
-          </div>
-          <div class="detail-purchase-table-container" style="position:relative;flex:1;min-height:0;border:1px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;">
-            <table id="detail-purchase-table" style="width:100%;border-collapse:collapse;font-size:.6rem;">
-              <thead style="position:sticky;top:0;z-index:5;background:rgba(30,32,45,0.85);backdrop-filter:blur(6px);">
-                <tr>
-                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Date</th>
-                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Product</th>
-                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Key</th>
-                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Price</th>
-                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Txn ID</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-            <div id="detail-purchase-empty" style="display:none;padding:1.2rem .9rem;text-align:center;font-size:.65rem;opacity:.6;">No purchases</div>
-          </div>
-        </div>
+        <div id="detail-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;font-size:.65rem;"></div>
       </div>
     </div>
+  </div>
+</div>
+<div id="purchases-modal" class="hidden" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:2000;">
+  <div style="width:920px;max-width:92%;background:#0f1117;border:1px solid #262a37;border-radius:14px;padding:1.25rem;display:flex;flex-direction:column;max-height:86vh;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.9rem;flex-wrap:wrap;">
+      <h3 style="margin:0;font-size:1rem;letter-spacing:.5px;">Purchase History</h3>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+        <div id="purchase-count" style="font-size:.6rem;color:#6366f1;font-weight:600;"></div>
+        <div style="display:flex;align-items:center;gap:.3rem;">
+          <button id="purchase-prev" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.6rem;padding:.4rem .65rem;">Prev</button>
+          <div id="purchase-page" style="font-size:.6rem;opacity:.7;min-width:50px;text-align:center;">1/1</div>
+          <button id="purchase-next" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.6rem;padding:.4rem .65rem;">Next</button>
+        </div>
+        <button id="purchase-close" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.6rem;padding:.45rem .75rem;">Close</button>
+      </div>
+    </div>
+    <div id="purchases-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.65rem;overflow:auto;padding-bottom:.25rem;"></div>
+    <div id="purchases-empty" style="display:none;opacity:.6;font-size:.7rem;text-align:center;padding:2rem 1rem;">No purchases</div>
   </div>
 </div>
 <script src="js/admin.js" defer></script>
