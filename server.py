@@ -713,7 +713,7 @@ def _eligible_unclaimed_transactions(username, gamepass_id=None, force_refresh=F
         logger.info(f"[EXTDBG] Initial transactions fetched for {username}: {len(txs)} (prefer_sales={prefer_sales})")
     claimed = _load_claimed_transactions()
     window_hours = SETTINGS.get('roblox',{}).get('claimWindowHours',12)
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+    cutoff = ensure_naive_utc(datetime.now(timezone.utc)) - timedelta(hours=window_hours)
     eligible = []
     gid_str = str(gamepass_id) if gamepass_id else None
     sale_loose = SETTINGS.get('roblox', {}).get('allowLooseSaleMatch', True)
@@ -746,7 +746,7 @@ def _eligible_unclaimed_transactions(username, gamepass_id=None, force_refresh=F
             continue
         created_raw = tx.get('created')
         try:
-            created_dt = datetime.fromisoformat(created_raw.replace('Z','')) if created_raw else None
+            created_dt = parse_ts(created_raw) if created_raw else None
         except Exception:
             created_dt = None
         if created_dt and created_dt < cutoff:
@@ -1574,7 +1574,7 @@ def cleanup_old_entries(data):
     if not data:
         return {}
     
-    current_time = datetime.now()
+    current_time = ensure_naive_utc(datetime.now(timezone.utc))
     cleaned_data = {}
     
     for username, user_info in data.items():
@@ -1582,16 +1582,16 @@ def cleanup_old_entries(data):
         
         for gamepass_id, entry in user_info.items():
             if isinstance(entry, dict) and 'issued_at' in entry:
-                issued_time = datetime.fromisoformat(entry['issued_at'])
-                if current_time - issued_time < timedelta(days=30):
+                issued_time = parse_ts(entry['issued_at'])
+                if issued_time and (current_time - issued_time < timedelta(days=30)):
                     cleaned_user_info[gamepass_id] = entry
                 else:
                     logger.info(f"Cleaned up old entry for {username} - {gamepass_id}")
             elif isinstance(entry, bool):
-                if entry:  
+                if entry:
                     cleaned_user_info[gamepass_id] = {
                         'key_issued': True,
-                        'issued_at': current_time.isoformat(),
+                        'issued_at': utc_now_iso(),
                         'key': f"ByorlHub_legacy_{secrets.token_urlsafe(8)}"
                     }
         if cleaned_user_info:
