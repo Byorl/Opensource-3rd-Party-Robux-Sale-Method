@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site.css">
+<style>
+body { font-family: 'Inter', sans-serif; background:#0a0a0f; color:#fff; margin:0; }
+.container { max-width:1200px; margin:0 auto; padding:2rem; }
+.card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:1.5rem; margin-bottom:1.5rem; }
+.hidden { display:none !important; }
+input, button { font-family:inherit; }
+input { width:100%; padding:0.75rem 1rem; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.04); color:#fff; }
+input:focus { outline:none; border-color:#6366f1; }
+button { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; border:none; padding:0.75rem 1.25rem; border-radius:8px; font-weight:600; cursor:pointer; transition:.2s; }
+button:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(99,102,241,.35); }
+.table-wrapper { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th, td { padding:0.75rem 0.75rem; text-align:left; font-size:0.85rem; }
+th { background:rgba(255,255,255,0.08); font-weight:600; letter-spacing:.5px; }
+tr { border-bottom:1px solid rgba(255,255,255,0.08); }
+tr:last-child { border-bottom:none; }
+.badge { display:inline-block; padding:0.25rem 0.5rem; border-radius:6px; font-size:0.65rem; background:rgba(99,102,241,0.15); color:#6366f1; font-weight:600; letter-spacing:.5px; }
+.actions button { background:#1e1f29; border:1px solid rgba(255,255,255,0.15); padding:0.4rem 0.75rem; font-size:0.7rem; border-radius:6px; margin-right:0.4rem; }
+.actions button.view { border-color:#6366f1; color:#6366f1; }
+.actions button.delete { border-color:#ef4444; color:#ef4444; }
+.actions button:hover { background:#272938; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
+.status { font-size:0.8rem; color:#a1a1aa; }
+.flex { display:flex; gap:1rem; }
+.toast-container { position:fixed; top:1rem; right:1rem; z-index:1000; width:300px; }
+.toast { background:#181b29; border-left:4px solid #6366f1; padding:0.75rem 0.9rem; margin-bottom:0.75rem; border-radius:8px; font-size:0.75rem; line-height:1.3; opacity:0; transform:translateY(10px); animation:fadeIn .4s forwards; }
+.toast.error { border-color:#ef4444; }
+.toast.success { border-color:#22c55e; }
+@keyframes fadeIn { to { opacity:1; transform:translateY(0);} }
+#login-form { max-width:380px; margin:6vh auto 0 auto; }
+label { font-size:0.7rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; color:#a1a1aa; display:block; margin-bottom:0.35rem; }
+pre { background:#11141d; padding:1rem; border-radius:8px; max-height:400px; overflow:auto; font-size:0.7rem; }
+.split { display:grid; grid-template-columns:1fr 340px; gap:1.5rem; }
+@media (max-width: 1100px){ .split { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="toast-container" id="toast-container"></div>
+<div id="login-view" class="container">
+  <div class="card" id="login-form">
+    <h2 style="margin-top:0;">Admin Login</h2>
+    <div style="margin-bottom:1rem;">
+      <label>Username</label>
+      <input id="admin-username" type="text" autocomplete="off" />
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label>Password</label>
+      <input id="admin-password" type="password" />
+    </div>
+    <button id="admin-login-btn">Login</button>
+  </div>
+</div>
+<div id="panel-view" class="container hidden">
+  <div class="header">
+    <h1 style="margin:0;font-size:1.4rem;">Accounts</h1>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <button id="refresh-btn" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);">Refresh</button>
+      <button id="admin-logout-btn" style="background:#272b37;border:1px solid rgba(255,255,255,.18);">Logout</button>
+    </div>
+  </div>
+  <div class="split">
+    <div class="card" id="accounts-section">
+      <div class="table-wrapper">
+        <table id="accounts-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Roblox</th>
+              <th>Purchases</th>
+              <th>Created</th>
+              <th>Last Login</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" id="detail-section" style="display:flex;flex-direction:column;min-height:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.75rem;flex-wrap:wrap;">
+        <h3 style="margin:0;font-size:1rem;letter-spacing:.5px;">Account Detail</h3>
+        <div id="detail-meta-actions" style="display:none;gap:.4rem;align-items:center;">
+          <button id="detail-refresh" style="background:#1e1f29;border:1px solid rgba(255,255,255,.15);font-size:.65rem;padding:.45rem .7rem;">Refresh</button>
+          <button id="detail-close" style="background:#272b37;border:1px solid rgba(255,255,255,.18);font-size:.65rem;padding:.45rem .7rem;">Clear</button>
+        </div>
+      </div>
+      <div id="detail-placeholder" style="font-size:0.75rem;color:#a1a1aa;">Select an account to view details...</div>
+      <div id="detail-content" class="hidden" style="display:flex;flex-direction:column;gap:.9rem;flex:1;min-height:0;">
+        <div id="detail-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;font-size:.65rem;"></div>
+        <div id="detail-purchases-wrapper" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
+            <div style="font-size:.65rem;letter-spacing:.5px;text-transform:uppercase;color:#a1a1aa;">Purchase History</div>
+            <div id="detail-purchase-count" style="font-size:.6rem;color:#6366f1;font-weight:600;"></div>
+          </div>
+          <div class="detail-purchase-table-container" style="position:relative;flex:1;min-height:0;border:1px solid rgba(255,255,255,0.08);border-radius:8px;overflow:hidden;">
+            <table id="detail-purchase-table" style="width:100%;border-collapse:collapse;font-size:.6rem;">
+              <thead style="position:sticky;top:0;z-index:5;background:rgba(30,32,45,0.85);backdrop-filter:blur(6px);">
+                <tr>
+                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Date</th>
+                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Product</th>
+                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Key</th>
+                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Price</th>
+                  <th style="padding:.45rem .55rem;text-align:left;font-weight:600;">Txn ID</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="detail-purchase-empty" style="display:none;padding:1.2rem .9rem;text-align:center;font-size:.65rem;opacity:.6;">No purchases</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/admin.js" defer></script>
+</body>
+</html>
