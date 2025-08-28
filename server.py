@@ -163,7 +163,7 @@ def _fetch_user_transactions(username: str, force_refresh: bool = False, limit: 
                 _user_last_api_call[rl_key] = now
             _tx_fetch_debug[username.lower()] = {
                 'mode':'purchase','reason':f'HTTP_{resp.status_code}','count':0,
-                'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z',
+                'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
                 'httpBody': body
             }
             logger.warning(f"Purchase transactions HTTP {resp.status_code} for uid={uid}: {body}")
@@ -196,14 +196,14 @@ def _fetch_user_transactions(username: str, force_refresh: bool = False, limit: 
             'force_refresh': force_refresh,
             'count': len(out),
             'sample': sample,
-            'ts': datetime.utcnow().isoformat() + 'Z'
+            'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return out
     except Exception as e:
         logger.warning(f"Purchase transaction fetch failure for {username}: {e}")
         _tx_fetch_debug[username.lower()] = {
             'mode':'purchase','reason':f'EXC_{type(e).__name__}','count':0,
-            'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+            'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return []
 
@@ -219,13 +219,13 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
     if not cookie:
         logger.warning(f"[TXFETCH][sale] No securityCookie configured; cannot fetch sale transactions for buyer={username}")
         _tx_fetch_debug[username.lower()] = {
-            'mode':'sale','reason':'NO_COOKIE','count':0,'force_refresh':force_refresh,'ts':datetime.utcnow().isoformat()+'Z'
+            'mode':'sale','reason':'NO_COOKIE','count':0,'force_refresh':force_refresh,'ts':datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return []
     if 'PUT_.ROBLOSECURITY' in cookie:
         logger.warning(f"[TXFETCH][sale] Placeholder cookie detected; update config")
         _tx_fetch_debug[username.lower()] = {
-            'mode':'sale','reason':'PLACEHOLDER_COOKIE','count':0,'force_refresh':force_refresh,'ts':datetime.utcnow().isoformat()+'Z'
+            'mode':'sale','reason':'PLACEHOLDER_COOKIE','count':0,'force_refresh':force_refresh,'ts':datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return []
     if limit is None:
@@ -235,7 +235,7 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
     if (not force_refresh) and cache_key in _roblox_tx_cache and (now - _roblox_tx_cache_time.get(cache_key,0)) < 8:
         _tx_fetch_debug[username.lower()] = {
             'mode':'sale','reason':'CACHE_HIT','count':len(_roblox_tx_cache[cache_key]),
-            'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+            'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return _roblox_tx_cache[cache_key]
     rl_key = f"sale_{username.lower()}"
@@ -245,12 +245,12 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
         if cache_key in _roblox_tx_cache:
             _tx_fetch_debug[username.lower()] = {
                 'mode':'sale','reason':'RATE_LIMIT_CACHE','count':len(_roblox_tx_cache[cache_key]),
-                'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+                'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
             }
             return _roblox_tx_cache[cache_key]
         _tx_fetch_debug[username.lower()] = {
             'mode':'sale','reason':'RATE_LIMIT_NO_CACHE','count':0,
-            'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+            'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return []
     _user_last_api_call[rl_key] = now
@@ -260,7 +260,7 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
         if auth_resp.status_code != 200:
             _tx_fetch_debug[username.lower()] = {
                 'mode':'sale','reason':f'AUTH_{auth_resp.status_code}','count':0,
-                'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+                'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
             }
             return []
         seller_id = auth_resp.json().get('id')
@@ -273,7 +273,7 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
         if resp.status_code != 200:
             _tx_fetch_debug[username.lower()] = {
                 'mode':'sale','reason':f'SALES_HTTP_{resp.status_code}','count':0,
-                'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+                'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
             }
             return []
         data = resp.json().get('data', [])
@@ -317,14 +317,14 @@ def _fetch_sale_transactions(username: str, force_refresh: bool = False, limit: 
             'mode': 'sale',
             'count': len(matched),
             'sample': samples,
-            'ts': datetime.utcnow().isoformat() + 'Z'
+            'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return matched
     except Exception as e:
         logger.warning(f"Sale transaction fetch failure: {e}")
         _tx_fetch_debug[username.lower()] = {
             'mode':'sale','reason':f'EXC_{type(e).__name__}','count':0,
-            'force_refresh': force_refresh,'ts': datetime.utcnow().isoformat()+'Z'
+            'force_refresh': force_refresh,'ts': datetime.now(timezone.utc).isoformat().replace('+00:00','Z')
         }
         return []
 
@@ -536,7 +536,7 @@ def get_products():
         'matched_buyer_records': 0,
         'limit': limit,
         'error': None,
-        'timestamp': datetime.utcnow().isoformat() + 'Z',
+    'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
         'target_user_id': target_user_id,
         'target_lookup_error': _target_err,
         'match_mode': 'id' if target_user_id else 'name',
@@ -713,7 +713,7 @@ def _eligible_unclaimed_transactions(username, gamepass_id=None, force_refresh=F
         logger.info(f"[EXTDBG] Initial transactions fetched for {username}: {len(txs)} (prefer_sales={prefer_sales})")
     claimed = _load_claimed_transactions()
     window_hours = SETTINGS.get('roblox',{}).get('claimWindowHours',12)
-    cutoff = datetime.utcnow() - timedelta(hours=window_hours)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=window_hours)
     eligible = []
     gid_str = str(gamepass_id) if gamepass_id else None
     sale_loose = SETTINGS.get('roblox', {}).get('allowLooseSaleMatch', True)
@@ -939,10 +939,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s: %(m
 logger = logging.getLogger(__name__)
 
 def utc_now_iso():
-    """Return UTC timestamp string in strict Z form without offset duplication.
-    Always like 2025-08-28T19:23:41.123456Z (no +00:00 then Z).
+    """Return timezone-aware current UTC time in RFC3339-like format with trailing Z.
+    Uses datetime.now(timezone.utc) to avoid deprecation warnings from datetime.utcnow().
     """
-    return datetime.utcnow().isoformat() + 'Z'
+    return datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 
 def parse_ts(ts: str):
     """Parse a stored ISO8601 timestamp (possibly with +00:00Z bug) into a naive UTC datetime.
@@ -1971,7 +1971,7 @@ def check_gamepass():
             else:
                 pending_info = {'started_at': utc_now_iso(), 'guest': True}
         pending_started_dt = parse_ts(pending_info.get('started_at'))
-        if authenticated_user and pending_started_dt and (datetime.utcnow() - pending_started_dt).total_seconds() > PENDING_PURCHASE_EXPIRY_SECONDS:
+        if authenticated_user and pending_started_dt and (datetime.now(timezone.utc).replace(tzinfo=None) - pending_started_dt).total_seconds() > PENDING_PURCHASE_EXPIRY_SECONDS:
             try:
                 account_manager.pop_pending_purchase(authenticated_user['user_id'], username, product_id)
             except Exception:
@@ -2018,7 +2018,7 @@ def check_gamepass():
                         ownership_fast_path_used = True
                         eligible_txs = [{
                             'transactionId': synthetic_tx_id,
-                            'created': (pending_started_dt or datetime.utcnow()).isoformat() + 'Z',
+                            'created': (pending_started_dt or datetime.now(timezone.utc).replace(tzinfo=None)).isoformat() + 'Z',
                             'amount': product.get('price'),
                             'details': f"Gamepass {product['gamepass_id']} ownership cycle {state['cycle']} ({owned_mode})",
                             'buyerName': username
@@ -2047,7 +2047,7 @@ def check_gamepass():
                     if synthetic_tx_id not in claimed_set_prefetch:
                         eligible_txs = [{
                             'transactionId': synthetic_tx_id,
-                            'created': (pending_started_dt or datetime.utcnow()).isoformat() + 'Z',
+                            'created': (pending_started_dt or datetime.now(timezone.utc).replace(tzinfo=None)).isoformat() + 'Z',
                             'amount': product.get('price'),
                             'details': f"Gamepass {product['gamepass_id']} ownership fallback cycle {state['cycle']}",
                             'buyerName': username
@@ -2179,8 +2179,8 @@ def check_gamepass():
         key, expiry = key_manager.generate_key_with_expiry(product_id, product.get('duration_days', 7))
         key_entry = {
             'key': key,
-            'issued_at': datetime.now().isoformat(),
-            'expiry_date': expiry.isoformat(),
+            'issued_at': utc_now_iso(), 
+            'expiry_date': expiry.isoformat().replace('+00:00', 'Z'),
             'transaction_id': new_tx['transactionId'],
             'transaction_created': new_tx.get('created'),
             'pending_started_at': pending_info.get('started_at') if pending_info else None,
