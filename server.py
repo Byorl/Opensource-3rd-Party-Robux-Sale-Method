@@ -1310,22 +1310,37 @@ class AccountManager:
 def start_purchase():
     try:
         user = get_authenticated_user()
-        if not user:
-            return jsonify({'error': 'Authentication required'}), 401
         data = request.get_json() or {}
-        roblox_username = data.get('roblox_username')
-        product_id = data.get('product_id')
+        roblox_username = data.get('roblox_username') or data.get('username')
+        product_id = data.get('product_id') or data.get('product')
         if not roblox_username or not product_id:
             return jsonify({'error': 'roblox_username and product_id required'}), 400
         if product_id not in PRODUCTS_CONFIG:
             return jsonify({'error': 'Unknown product'}), 400
-        logger.info(f"/start-purchase attempt user_id={user['user_id']} accountName={user.get('username')} roblox_username={roblox_username} product_id={product_id}")
+        if not user:
+            guest_key = 'guest_' + hashlib.sha256(f"{request.remote_addr}:{roblox_username}".encode()).hexdigest()[:24]
+            accounts = account_manager.load_accounts()
+            if guest_key not in accounts:
+                accounts[guest_key] = {
+                    'user_id': guest_key,
+                    'username': guest_key,
+                    'created_at': utc_now_iso(),
+                    'last_login': utc_now_iso(),
+                    'guest': True,
+                    'pending_purchases': {}
+                }
+                account_manager.save_accounts(accounts)
+            user = accounts[guest_key]
+            session['user_id'] = guest_key  
+            logger.info(f"/start-purchase guest session created guest_id={guest_key} roblox_username={roblox_username} product_id={product_id}")
+        else:
+            logger.info(f"/start-purchase attempt user_id={user['user_id']} accountName={user.get('username')} roblox_username={roblox_username} product_id={product_id}")
         ok, err = account_manager.set_pending_purchase(user['user_id'], roblox_username, product_id)
         if not ok:
             return jsonify({'error': err or 'Failed to start purchase'}), 500
         pending_info = account_manager.get_pending_purchase(user['user_id'], roblox_username, product_id) or {}
         logger.info(f"/start-purchase stored pending key={product_id}::{roblox_username.lower()} info={pending_info}")
-        return jsonify({'started': True, 'started_at': pending_info.get('started_at')})
+        return jsonify({'started': True, 'started_at': pending_info.get('started_at'), 'guest': user.get('guest', False)})
     except Exception as e:
         logger.error(f"Error in start_purchase: {e}")
         return jsonify({'error': 'Internal error'}), 500
@@ -2001,7 +2016,10 @@ def check_gamepass():
         else:
             eligible_txs = _eligible_unclaimed_transactions(username, gamepass_id=product['gamepass_id'], force_refresh=force_refresh)
         debug_diag = _tx_fetch_debug.get(username.lower())
-        logger.info(f"Eligible tx count for {username} force_refresh={force_refresh}: {len(eligible_txs)} diag={debug_diag}")
+        rate_limited = False
+        if debug_diag and isinstance(debug_diag, dict) and str(debug_diag.get('reason','')).startswith('HTTP_429'):
+            rate_limited = True
+        logger.info(f"Eligible tx count for {username} force_refresh={force_refresh}: {len(eligible_txs)} diag={debug_diag} rate_limited={rate_limited}")
         if not eligible_txs:
             if use_fast_path and not ownership_fast_path_used:
                 roblox_cfg = SETTINGS.get('roblox', {}).get('securityCookie')
@@ -2033,11 +2051,16 @@ def check_gamepass():
                         logger.info(f"Found transactions after quick re-poll {_poll+1}/{poll_attempts} interval={poll_interval_ms}ms")
                         break
             if not eligible_txs:
-                return jsonify({'hasGamepass': False,
-                                'message':'No recent purchase transactions detected for this user within claim window.',
-                                'priorKeyCount': prior_key_count,
-                                'hadPreviousKeys': prior_key_count > 0,
-                                'debug': debug_diag})
+                resp = {'hasGamepass': False,
+                        'message':'No recent purchase transactions detected for this user within claim window.' if not rate_limited else 'Rate limited by Roblox API. Please wait a moment then press the button again.',
+                        'priorKeyCount': prior_key_count,
+                        'hadPreviousKeys': prior_key_count > 0,
+                        'debug': debug_diag,
+                        'rate_limited': rate_limited,
+                        'shouldRetry': rate_limited}
+                if rate_limited:
+                    return jsonify(resp), 429
+                return jsonify(resp)
         if username not in user_data:
             user_data[username] = {}
         existing_product_record = user_data[username].get(product_id)
