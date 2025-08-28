@@ -7,9 +7,13 @@ import secrets
 import string
 import json
 import sys
+import os
 from datetime import datetime
 from typing import List
 from github_stock import GitHubStockManager
+from dotenv import load_dotenv
+
+load_dotenv('config/.env')
 
 def generate_key(product_type: str = "7day") -> str:
     """Generate a single premium key."""
@@ -49,10 +53,18 @@ def generate_keys(count: int, product_type: str = "7day", existing_keys: set = N
     return list(keys)
 
 def load_config():
-    """Load GitHub configuration."""
+    """Load configuration with environment variables for sensitive data."""
     try:
         with open('config/products.json', 'r') as f:
             config = json.load(f)
+        
+        config['github'] = {
+            'token': os.getenv('GITHUB_TOKEN'),
+            'repo_owner': os.getenv('GITHUB_REPO_OWNER'),
+            'repo_name': os.getenv('GITHUB_REPO_NAME'),
+            'bought_file': os.getenv('GITHUB_BOUGHT_FILE', config.get('github', {}).get('bought_file', 'Keys Bought'))
+        }
+        
         return config
     except Exception as e:
         print(f"[X] Failed to load config: {e}")
@@ -87,6 +99,8 @@ def show_status():
     for product in config['products']:
         github_file = product.get('stockGithubFile')
         if github_file:
+            if '/' not in github_file:
+                github_file = f"Stock/{github_file}"
             stock_count = manager.get_stock_count(github_file)
             total_keys += stock_count
             
@@ -114,18 +128,58 @@ def show_status():
 def main():
     """Main function - simplified interface."""
     if len(sys.argv) < 2:
-        print("ByorlHub Key Generator")
-        print("=" * 30)
-        print("Usage:")
-        print("  python github_key_generator.py <count> [product]")
-        print("")
-        print("Examples:")
-        print("  python github_key_generator.py 50        # Add 50 keys to 7-day stock")
-        print("  python github_key_generator.py 25 7d     # Add 25 keys to 7-day stock")
-        print("  python github_key_generator.py 10 30d    # Add 10 keys to 30-day stock")
-        print("  python github_key_generator.py status    # Show current stock")
-        print("")
-        return
+        config = load_config()
+        products = config.get('products', [])
+        if not products:
+            print('[X] No products configured in config/products.json')
+            return
+
+        github_config = config.get('github', {})
+        manager = None
+        if github_config.get('token'):
+            manager = GitHubStockManager(
+                token=github_config.get('token'),
+                repo_owner=github_config.get('repo_owner'),
+                repo_name=github_config.get('repo_name')
+            )
+
+        print('Key Generator - Select product to add keys to')
+        print('= ' * 20)
+        menu = []
+        for idx, prod in enumerate(products, 1):
+            name = prod.get('name')
+            stockfile = prod.get('stockGithubFile') or ''
+            display_path = stockfile if '/' in stockfile else f"Stock/{stockfile}" if stockfile else '(no file)'
+            count = '?'
+            if manager and stockfile:
+                try:
+                    count = len(manager.get_file_content(display_path))
+                except Exception:
+                    count = '?'
+            menu.append((prod, display_path, count))
+            print(f"{idx:2d}. {name} - {count} keys - {display_path}")
+
+        sel = input('\nEnter product number (or q to quit): ').strip()
+        if sel.lower() == 'q':
+            return
+        try:
+            seln = int(sel)
+            if seln < 1 or seln > len(menu):
+                print('[X] Invalid selection')
+                return
+        except ValueError:
+            print('[X] Invalid selection')
+            return
+
+        selected_prod, selected_path, _ = menu[seln - 1]
+        cnt_raw = input('How many keys to generate and add? ').strip()
+        try:
+            count = int(cnt_raw)
+        except Exception:
+            print('[X] Invalid number')
+            return
+        product_type = selected_prod.get('id')
+        sys.argv = [sys.argv[0], str(count), product_type]
     
     if sys.argv[1].lower() == 'status':
         show_status()
@@ -167,6 +221,8 @@ def main():
         return
     
     github_file = product.get('stockGithubFile')
+    if github_file and '/' not in github_file:
+        github_file = f"Stock/{github_file}"
     if not github_file:
         print(f"[X] No GitHub file configured for {product['name']}")
         return
@@ -181,6 +237,8 @@ def main():
     for prod in config['products']:
         stock_file = prod.get('stockGithubFile')
         if stock_file:
+            if '/' not in stock_file:
+                stock_file = f"Stock/{stock_file}"
             stock_files.append(stock_file)
     
     bought_file = github_config.get('bought_file')
